@@ -106,55 +106,82 @@ function hasNoExactMatches(html: string): boolean {
 }
 
 // Parse the total results count from the eBay search page header
-// e.g. "1,234 results for ..." â 1234
+// eBay uses Marko SSR with unquoted attributes and HTML comments, e.g.:
+//   <h1 class=srp-controls__count-heading>
+//     <!--F#f_0--><span class=BOLD>2,900</span><!--F/--><!--F#f_0-->+ results for ...
+//   </h1>
 function parseTotalResults(html: string): number {
-  // Pattern 1: "X results for ..."
+  // Pattern 1 (primary): eBay Marko SSR â <span class=BOLD>X</span> + Marko comments + "results"
+  // Handles unquoted class attr, <!--...--> comments, optional "+" before "results"
+  const markoMatch = html.match(/<span\s+class=(?:"|')?BOLD(?:"|')?\s*>([\d,]+)<\/span>(?:<!--[^>]*-->|\s)*\+?\s*results?\s+for/i);
+  if (markoMatch) {
+    return parseInt(markoMatch[1].replace(/,/g, ''), 10) || 0;
+  }
+
+  // Pattern 2: srp-controls heading â dig into nested content for the count
+  const headingMatch = html.match(/class=srp-controls__count-heading[^>]*>[\s\S]*?<span[^>]*>([\d,]+)<\/span>[\s\S]*?results?\s+for/i);
+  if (headingMatch) {
+    return parseInt(headingMatch[1].replace(/,/g, ''), 10) || 0;
+  }
+
+  // Pattern 3 (legacy): "X results for ..." as plain text
   const resultMatch = html.match(/([\d,]+)\s+results?\s+for/i);
   if (resultMatch) {
     return parseInt(resultMatch[1].replace(/,/g, ''), 10) || 0;
   }
 
-  // Pattern 2: Bold count in heading â <span class="BOLD">X</span> results
+  // Pattern 4 (legacy): Bold count in heading â <span class="BOLD">X</span> results
   const boldMatch = html.match(/<span[^>]*class="[^"]*BOLD[^"]*"[^>]*>([\d,]+)<\/span>\s*results?/i);
   if (boldMatch) {
     return parseInt(boldMatch[1].replace(/,/g, ''), 10) || 0;
-  }
-
-  // Pattern 3: srp-controls__count-heading
-  const headingMatch = html.match(/srp-controls__count-heading[^>]*>[^<]*([\d,]+)\s+results?/i);
-  if (headingMatch) {
-    return parseInt(headingMatch[1].replace(/,/g, ''), 10) || 0;
   }
 
   return 0;
 }
 
 // Parse individual sold prices from item cards
+// eBay's Marko SSR uses s-card__price class (not s-item__price):
+//   <span class="su-styled-text primary bold large-1 s-card__price">$20.00</span>
+// Strikethrough prices are original/list prices, not actual sold prices:
+//   <span class="su-styled-text positive strikethrough large-1 s-card__price">$51.99</span>
 function parseSoldPrices(html: string): number[] {
   const prices: number[] = [];
 
-  // Pattern 1: s-item__price spans â "$XX.XX"
-  const priceRegex = /s-item__price[^>]*>\s*<span[^>]*>\$([\d,]+\.?\d*)<\/span>/gi;
+  // Pattern 1 (primary): s-card__price spans â eBay's current Marko SSR format
+  // Matches class="...s-card__price...">$XX.XX and skips strikethrough entries
+  const cardPriceRegex = /class="([^"]*s-card__price[^"]*)"[^>]*>\$([\d,]+\.?\d*)/gi;
   let match;
-  const seenPrices = new Set<string>();
 
-  while ((match = priceRegex.exec(html)) !== null) {
-    const priceStr = match[1].replace(/,/g, '');
+  while ((match = cardPriceRegex.exec(html)) !== null) {
+    const classStr = match[1];
+    if (classStr.includes('strikethrough')) continue; // Skip original/list prices
+    const priceStr = match[2].replace(/,/g, '');
     const price = parseFloat(priceStr);
-    if (!isNaN(price) && price >= 1 && price <= 10000 && !seenPrices.has(priceStr)) {
-      seenPrices.add(priceStr);
+    if (!isNaN(price) && price >= 1 && price <= 100000) {
       prices.push(price);
     }
   }
 
-  // Pattern 2: Fallback dollar amount regex
+  // Pattern 2 (legacy): s-item__price spans â older eBay format
+  if (prices.length === 0) {
+    const priceRegex = /s-item__price[^>]*>\s*<span[^>]*>\$([\d,]+\.?\d*)<\/span>/gi;
+    while ((match = priceRegex.exec(html)) !== null) {
+      const priceStr = match[1].replace(/,/g, '');
+      const price = parseFloat(priceStr);
+      if (!isNaN(price) && price >= 1 && price <= 100000) {
+        prices.push(price);
+      }
+    }
+  }
+
+  // Pattern 3: Fallback dollar amount regex (last resort)
   if (prices.length === 0) {
     const altPriceRegex = /\$\s*([\d,]+\.?\d{0,2})/g;
     const seenPrices = new Set<string>();
     while ((match = altPriceRegex.exec(html)) !== null) {
       const priceStr = match[1].replace(/,/g, '');
       const price = parseFloat(priceStr);
-      if (!isNaN(price) && price >= 1 && price <= 10000 && !seenPrices.has(priceStr)) {
+      if (!isNaN(price) && price >= 1 && price <= 100000 && !seenPrices.has(priceStr)) {
         seenPrices.add(priceStr);
         prices.push(price);
       }
