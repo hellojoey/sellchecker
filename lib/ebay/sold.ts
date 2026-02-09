@@ -50,17 +50,21 @@ export async function fetchSoldListings(query: string): Promise<SoldListingsResu
 
     const html = await response.text();
 
-    // Check if eBay returned "No exact matches found" / fuzzy results
-    if (hasNoExactMatches(html)) {
-      console.log(`[SellChecker] No exact sold matches for "${query}" â eBay showed fuzzy results only`);
-      return ZERO_RESULT; // Confirmed: 0 exact matches
-    }
-
-    // Parse the total results count from the page
+    // Parse the total results count from the page FIRST
     const soldCount = parseTotalResults(html);
 
-    // If eBay reports 0 results, return zero (not null)
-    if (soldCount === 0) {
+    // If eBay reports real results, use them â even if the page also
+    // contains "Results matching fewer words" text in a sidebar/section
+    if (soldCount > 0) {
+      console.log(`[SellChecker] Found ${soldCount} sold results for "${query}"`);
+      // Fall through to price parsing below
+    } else {
+      // soldCount is 0 â check if eBay showed fuzzy/no-match indicators
+      if (hasNoExactMatches(html)) {
+        console.log(`[SellChecker] No exact sold matches for "${query}" â eBay showed fuzzy results only`);
+        return ZERO_RESULT; // Confirmed: 0 exact matches
+      }
+      // soldCount is 0 and no fuzzy indicators â page may have parsed wrong
       console.log(`[SellChecker] eBay reported 0 sold results for "${query}"`);
       return ZERO_RESULT; // Confirmed: 0 results
     }
