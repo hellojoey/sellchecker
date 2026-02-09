@@ -2,10 +2,106 @@
 // GET /api/search?q=Lululemon+Define+Jacket
 import { NextRequest, NextResponse } from 'next/server';
 import { searchEbay } from '@/lib/ebay/browse';
-import { hashQuery, normalizeQuery, getCachedResult, setCachedResult } from '@/lib/cache';
-import { createServiceClient } from '@/lib/supabase/server';
+import { hashQuery, normalizeQuery } from '@/lib/cache';
 
 const FREE_LIMIT = parseInt(process.env.NEXT_PUBLIC_FREE_SEARCH_LIMIT || '5');
+
+// In-memory cache as fallback when Supabase isn't configured
+const memoryCache = new Map<string, { result: any; expiresAt: number }>();
+
+// Try to get Supabase client (returns null if not configured)
+function getSupabase() {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) return null;
+
+    const { createClient } = require('@supabase/supabase-js');
+    return createClient(url, key);
+  } catch {
+    return null;
+  }
+}
+
+// Check cache — tries Supabase first, falls back to in-memory
+async function checkCache(queryHash: string) {
+  // Try Supabase cache
+  const supabase = getSupabase();
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from('search_cache')
+        .select('*')
+        .eq('query_hash', queryHash)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (data) {
+        return {
+          query: data.query,
+          soldCount90d: data.sold_count_90d,
+          activeCount: data.active_count,
+          sellThroughRate: data.sell_through_rate,
+          avgSoldPrice: data.avg_sold_price,
+          medianSoldPrice: data.median_sold_price,
+          priceLow: data.price_low,
+          priceHigh: data.price_high,
+          avgDaysToSell: data.avg_days_to_sell,
+          verdict: data.verdict,
+          totalResults: (data.sold_count_90d || 0) + (data.active_count || 0),
+          platform: 'ebay',
+          cachedAt: data.cached_at,
+        };
+      }
+    } catch (e) {
+      console.warn('Supabase cache read failed, using memory cache');
+    }
+  }
+
+  // Fall back to in-memory cache
+  const cached = memoryCache.get(queryHash);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.result;
+  }
+
+  return null;
+}
+
+// Store in cache — tries Supabase, falls back to in-memory
+async function storeCache(queryHash: string, query: string, result: any) {
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  // Store in memory cache regardless
+  memoryCache.set(queryHash, {
+    result,
+    expiresAt: expiresAt.getTime(),
+  });
+
+  // Also store in Supabase if available
+  const supabase = getSupabase();
+  if (supabase) {
+    try {
+      await supabase.from('search_cache').upsert({
+        query_hash: queryHash,
+        query,
+        sold_count_90d: result.soldCount90d,
+        active_count: result.activeCount,
+        sell_through_rate: result.sellThroughRate,
+        avg_sold_price: result.avgSoldPrice,
+        median_sold_price: result.medianSoldPrice,
+        price_low: result.priceLow,
+        price_high: result.priceHigh,
+        avg_days_to_sell: result.avgDaysToSell,
+        verdict: result.verdict,
+        raw_data: result,
+        cached_at: new Date().toISOString(),
+        expires_at: expiresAt.toISOString(),
+      });
+    } catch (e) {
+      console.warn('Supabase cache write failed, using memory only');
+    }
+  }
+}
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get('q');
@@ -22,27 +118,11 @@ export async function GET(request: NextRequest) {
   const queryHash = hashQuery(query);
 
   try {
-    const supabase = createServiceClient();
-
     // 1. Check cache first
-    const cached = await getCachedResult(supabase, queryHash);
+    const cached = await checkCache(queryHash);
     if (cached) {
       return NextResponse.json({
-        result: {
-          query: cached.query,
-          soldCount90d: cached.sold_count_90d,
-          activeCount: cached.active_count,
-          sellThroughRate: cached.sell_through_rate,
-          avgSoldPrice: cached.avg_sold_price,
-          medianSoldPrice: cached.median_sold_price,
-          priceLow: cached.price_low,
-          priceHigh: cached.price_high,
-          avgDaysToSell: cached.avg_days_to_sell,
-          verdict: cached.verdict,
-          totalResults: (cached.sold_count_90d || 0) + (cached.active_count || 0),
-          platform: 'ebay',
-          cachedAt: cached.cached_at,
-        },
+        result: cached,
         cached: true,
       });
     }
@@ -51,7 +131,7 @@ export async function GET(request: NextRequest) {
     const result = await searchEbay(normalized);
 
     // 3. Cache the result
-    await setCachedResult(supabase, queryHash, normalized, result);
+    await storeCache(queryHash, normalized, result);
 
     return NextResponse.json({
       result,
@@ -68,6 +148,14 @@ export async function GET(request: NextRequest) {
         cached: false,
         demo: true,
       });
+    }
+
+    // If eBay API returned an error, include details for debugging
+    if (error.message?.includes('eBay')) {
+      return NextResponse.json(
+        { error: 'eBay API error. Please try again.', details: error.message },
+        { status: 502 }
+      );
     }
 
     return NextResponse.json(
