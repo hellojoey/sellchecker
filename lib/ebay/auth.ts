@@ -10,14 +10,14 @@ export async function getEbayToken(): Promise<string> {
     return cachedToken;
   }
 
-  const appId = process.env.EBAY_APP_ID;
-  const certId = process.env.EBAY_CERT_ID;
+  const clientId = process.env.EBAY_CLIENT_ID;
+  const clientSecret = process.env.EBAY_CLIENT_SECRET;
 
-  if (!appId || !certId) {
+  if (!clientId || !clientSecret) {
     throw new Error('Missing eBay API credentials');
   }
 
-  const credentials = Buffer.from(`${appId}:${certId}`).toString('base64');
+  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
   const response = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {
     method: 'POST',
