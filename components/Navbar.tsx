@@ -1,10 +1,68 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [plan, setPlan] = useState<string>('free');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    // Get initial session
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      if (user) {
+        // Fetch plan from profile
+        supabase
+          .from('profiles')
+          .select('plan')
+          .eq('id', user.id)
+          .single()
+          .then(({ data }) => {
+            if (data?.plan) setPlan(data.plan);
+          });
+      }
+      setLoading(false);
+    });
+
+    // Listen for auth changes (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+        if (!session?.user) {
+          setPlan('free');
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setUser(null);
+    setPlan('free');
+    window.location.href = '/';
+  };
+
+  const handleManageBilling = async () => {
+    try {
+      const res = await fetch('/api/billing/portal', { method: 'POST' });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Failed to open billing portal:', error);
+    }
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
@@ -27,15 +85,51 @@ export default function Navbar() {
             <Link href="/pricing" className="text-sm text-gray-600 hover:text-gray-900 transition">
               Pricing
             </Link>
-            <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 transition">
-              Log in
-            </Link>
-            <Link
-              href="/login?plan=pro"
-              className="text-sm bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium"
-            >
-              Start Free Trial
-            </Link>
+
+            {loading ? (
+              <div className="w-16 h-8 bg-gray-100 rounded-lg animate-pulse" />
+            ) : user ? (
+              <>
+                {plan === 'pro' && (
+                  <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-full">
+                    PRO
+                  </span>
+                )}
+                {plan === 'pro' ? (
+                  <button
+                    onClick={handleManageBilling}
+                    className="text-sm text-gray-600 hover:text-gray-900 transition"
+                  >
+                    Billing
+                  </button>
+                ) : (
+                  <Link
+                    href="/pricing"
+                    className="text-sm text-green-600 hover:text-green-700 font-medium transition"
+                  >
+                    Upgrade
+                  </Link>
+                )}
+                <button
+                  onClick={handleSignOut}
+                  className="text-sm text-gray-600 hover:text-gray-900 transition"
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 transition">
+                  Log in
+                </Link>
+                <Link
+                  href="/login?plan=pro"
+                  className="text-sm bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium"
+                >
+                  Start Free Trial
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -58,10 +152,34 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-3">
           <Link href="/pricing" className="block text-gray-600 hover:text-gray-900">Pricing</Link>
-          <Link href="/login" className="block text-gray-600 hover:text-gray-900">Log in</Link>
-          <Link href="/login?plan=pro" className="block bg-green-600 text-white text-center px-4 py-2 rounded-lg font-medium">
-            Start Free Trial
-          </Link>
+          {user ? (
+            <>
+              {plan === 'pro' && (
+                <span className="inline-block text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-full">
+                  PRO
+                </span>
+              )}
+              {plan === 'pro' ? (
+                <button onClick={handleManageBilling} className="block text-gray-600 hover:text-gray-900">
+                  Manage Billing
+                </button>
+              ) : (
+                <Link href="/pricing" className="block text-green-600 font-medium">
+                  Upgrade to Pro
+                </Link>
+              )}
+              <button onClick={handleSignOut} className="block text-gray-600 hover:text-gray-900">
+                Log out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="block text-gray-600 hover:text-gray-900">Log in</Link>
+              <Link href="/login?plan=pro" className="block bg-green-600 text-white text-center px-4 py-2 rounded-lg font-medium">
+                Start Free Trial
+              </Link>
+            </>
+          )}
         </div>
       )}
     </nav>

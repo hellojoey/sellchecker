@@ -1,4 +1,8 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 
 const FREE_FEATURES = [
   '5 searches per day',
@@ -20,6 +24,40 @@ const PRO_FEATURES = [
 ];
 
 export default function PricingPage() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleUpgrade = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      // Check if user is logged in
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        // Not logged in — send to login with plan=pro so they come back after auth
+        window.location.href = '/login?plan=pro';
+        return;
+      }
+
+      // User is logged in — create checkout session
+      const res = await fetch('/api/checkout', { method: 'POST' });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to start checkout');
+      }
+
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="py-16 sm:py-24">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
@@ -32,6 +70,12 @@ export default function PricingPage() {
             Cancel anytime.
           </p>
         </div>
+
+        {error && (
+          <div className="max-w-3xl mx-auto mb-8 bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        )}
 
         <div className="grid sm:grid-cols-2 gap-8 max-w-3xl mx-auto">
           {/* Free Plan */}
@@ -92,13 +136,14 @@ export default function PricingPage() {
             </div>
 
             <div className="mt-auto">
-              <Link
-                href="/login?plan=pro"
-                className="block w-full text-center py-3 px-6 bg-green-600 rounded-xl font-semibold text-white hover:bg-green-700 transition"
+              <button
+                onClick={handleUpgrade}
+                disabled={loading}
+                className="w-full text-center py-3 px-6 bg-green-600 rounded-xl font-semibold text-white hover:bg-green-700 disabled:bg-green-400 transition"
               >
-                Start 7-day free trial
-              </Link>
-              <p className="text-xs text-gray-500 text-center mt-2">No credit card required to start</p>
+                {loading ? 'Redirecting...' : 'Start 7-day free trial'}
+              </button>
+              <p className="text-xs text-gray-500 text-center mt-2">7-day free trial, then $10/month</p>
             </div>
           </div>
         </div>
