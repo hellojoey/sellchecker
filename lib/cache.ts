@@ -1,8 +1,5 @@
-// Search cache â 24-hour TTL, MD5 hash key
+// Search cache — 24-hour TTL, MD5 hash key
 import crypto from 'crypto';
-
-// Bump this version to invalidate all cached results (e.g., after scraper fixes)
-const CACHE_VERSION = 'v2';
 
 export function normalizeQuery(query: string): string {
   return query.toLowerCase().trim().replace(/\s+/g, ' ');
@@ -10,7 +7,7 @@ export function normalizeQuery(query: string): string {
 
 export function hashQuery(query: string): string {
   const normalized = normalizeQuery(query);
-  return crypto.createHash('md5').update(`${CACHE_VERSION}:${normalized}`).digest('hex');
+  return crypto.createHash('md5').update(normalized).digest('hex');
 }
 
 // Check cache in Supabase (called from API route)

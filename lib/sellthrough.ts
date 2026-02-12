@@ -4,6 +4,15 @@
 
 export type Verdict = 'BUY' | 'RISKY' | 'PASS';
 
+export interface TopListing {
+  title: string;
+  price: number;
+  imageUrl?: string;
+  condition: string;
+  itemUrl: string;
+  seller?: string;
+}
+
 export interface SellThroughResult {
   query: string;
   soldCount90d: number;
@@ -18,6 +27,7 @@ export interface SellThroughResult {
   totalResults: number;
   platform: string;
   cachedAt?: string;
+  topListings?: TopListing[];
 }
 
 export function calculateSellThrough(sold: number, active: number): number {

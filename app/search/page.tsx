@@ -5,6 +5,9 @@ import { useState, useEffect, Suspense } from 'react';
 import SearchBar from '@/components/SearchBar';
 import SearchResults from '@/components/SearchResults';
 import ProTools from '@/components/ProTools';
+import CompCheck from '@/components/CompCheck';
+import SourcingCalc from '@/components/SourcingCalc';
+import TrendingSearches from '@/components/TrendingSearches';
 import { createClient } from '@/lib/supabase/client';
 import type { SellThroughResult } from '@/lib/sellthrough';
 
@@ -113,7 +116,13 @@ function SearchContent() {
         <div className="animate-fade-in">
           <SearchResults result={result} />
 
-          {/* Pro Tools — shown for Pro users, locked teaser for free */}
+          {/* Comp Check — show competing eBay listings (free for everyone) */}
+          <CompCheck listings={result.topListings || []} query={result.query} />
+
+          {/* Sourcing Calculator — free for everyone */}
+          <SourcingCalc result={result} />
+
+          {/* Pro Tools — pricing slider, profit calc, shipping (Pro-gated) */}
           <ProTools result={result} isPro={isPro} />
 
           {/* Search again prompt */}
@@ -125,12 +134,13 @@ function SearchContent() {
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state — show trending */}
       {!query && !loading && !result && (
-        <div className="text-center py-20 text-gray-400">
+        <div className="text-center py-12 text-gray-400">
           <div className="text-5xl mb-4">🔍</div>
-          <p className="text-lg">Search for any item to see its sell-through rate</p>
-          <p className="text-sm mt-1">Try &ldquo;Lululemon Define Jacket&rdquo; or &ldquo;Nike Dunk Low&rdquo;</p>
+          <p className="text-lg mb-1">Search for any item to see its sell-through rate</p>
+          <p className="text-sm mb-8">Try &ldquo;Lululemon Define Jacket&rdquo; or &ldquo;Nike Dunk Low&rdquo;</p>
+          <TrendingSearches />
         </div>
       )}
     </div>
