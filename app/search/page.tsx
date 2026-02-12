@@ -8,6 +8,7 @@ import ProTools from '@/components/ProTools';
 import CompCheck from '@/components/CompCheck';
 import SourcingCalc from '@/components/SourcingCalc';
 import TrendingSearches from '@/components/TrendingSearches';
+import SaveSearchButton from '@/components/SaveSearchButton';
 import { createClient } from '@/lib/supabase/client';
 import type { SellThroughResult } from '@/lib/sellthrough';
 
@@ -19,6 +20,7 @@ function SearchContent() {
   const [error, setError] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [isPro, setIsPro] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Check user plan on mount
   useEffect(() => {
@@ -26,6 +28,7 @@ function SearchContent() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        setIsLoggedIn(true);
         const { data } = await supabase
           .from('profiles')
           .select('plan')
@@ -78,7 +81,7 @@ function SearchContent() {
       {remaining !== null && (
         <div className="text-center mb-4">
           <span className="text-sm text-gray-500">
-            {remaining} search{remaining !== 1 ? 'es' : ''} remaining today
+            {remaining} SellCheck{remaining !== 1 ? 's' : ''} remaining today
             {remaining <= 1 && (
               <span className="text-green-600 font-medium"> · <a href="/pricing" className="underline">Upgrade to Pro</a> for unlimited</span>
             )}
@@ -105,7 +108,7 @@ function SearchContent() {
           <p className="text-red-700 font-medium">{error}</p>
           {error.includes('limit') && (
             <a href="/pricing" className="text-sm text-red-600 underline mt-2 inline-block">
-              Upgrade to Pro for unlimited searches
+              Upgrade to Pro for unlimited SellChecks
             </a>
           )}
         </div>
@@ -116,16 +119,21 @@ function SearchContent() {
         <div className="animate-fade-in">
           <SearchResults result={result} />
 
+          {/* Action bar — Save Search button */}
+          <div className="flex items-center justify-end mt-3 mb-2">
+            <SaveSearchButton result={result} isPro={isPro} isLoggedIn={isLoggedIn} />
+          </div>
+
           {/* Comp Check — show competing eBay listings (free for everyone) */}
           <CompCheck listings={result.topListings || []} query={result.query} />
 
           {/* Sourcing Calculator — free for everyone */}
           <SourcingCalc result={result} />
 
-          {/* Pro Tools — pricing slider, profit calc, shipping (Pro-gated) */}
+          {/* Pro Tools — pricing slider, profit calc, shipping (visible but locked for free) */}
           <ProTools result={result} isPro={isPro} />
 
-          {/* Search again prompt */}
+          {/* Footer */}
           <div className="text-center mt-8">
             <p className="text-sm text-gray-400">
               Data sourced from eBay active and sold listings · Updated every 24 hours

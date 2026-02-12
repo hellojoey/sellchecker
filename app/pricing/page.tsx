@@ -5,22 +5,21 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
 const FREE_FEATURES = [
-  '5 searches per day',
+  '5 SellChecks per day',
   'Sell-through rate + BUY/RISKY/PASS verdict',
   'Price range and average pricing',
-  'eBay marketplace data',
-  'Mobile-friendly',
+  'Comp Check — see competing eBay listings',
+  'Sourcing Calculator — know your max buy price',
+  'Mobile-friendly for on-the-go sourcing',
 ];
 
 const PRO_FEATURES = [
-  'Unlimited searches',
+  'Unlimited SellChecks — never run out at the thrift store',
+  'Saved Searches — save items with your cost of goods for later',
   'Interactive pricing slider — see what price sells fastest',
-  'Profit calculator — enter your cost, see net profit after eBay fees',
-  'Shipping cost estimator by zip code',
-  'Search history dashboard',
-  'Watchlist with price alerts',
-  'CSV export',
-  'Priority support',
+  'Profit calculator — enter your COG, see net profit after eBay fees',
+  'Shipping cost estimator by package weight',
+  'Everything in Free, plus priority support',
 ];
 
 export default function PricingPage() {
