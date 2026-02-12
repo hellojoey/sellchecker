@@ -1,6 +1,12 @@
 "use client";
 
-import { Check } from "lucide-react";
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
 
 interface PricingCardProps {
   title: string;
@@ -47,7 +53,7 @@ export function PricingCard({
       <ul className="space-y-3 mb-6">
         {features.map((feature) => (
           <li key={feature} className="flex items-center gap-2 text-sm text-gray-700">
-            <Check size={16} className="text-emerald-500 flex-shrink-0" />
+            <CheckIcon className="text-emerald-500 flex-shrink-0" />
             {feature}
           </li>
         ))}
