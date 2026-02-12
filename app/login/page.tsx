@@ -13,10 +13,12 @@ function LoginContent() {
 
   const [mode, setMode] = useState<'login' | 'signup'>(plan === 'pro' ? 'signup' : 'login');
   const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [confirmationSent, setConfirmationSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +44,12 @@ function LoginContent() {
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              first_name: firstName,
+            },
+            emailRedirectTo: `${window.location.origin}/api/auth/callback${plan === 'pro' ? '?next=/pricing?plan=pro' : '?next=/search'}`,
+          },
         });
 
         if (signUpError) {
@@ -50,18 +58,9 @@ function LoginContent() {
           return;
         }
 
-        if (data.user) {
-          // If plan=pro, redirect to checkout flow
-          if (plan === 'pro') {
-            const res = await fetch('/api/checkout', { method: 'POST' });
-            const checkout = await res.json();
-            if (checkout.url) {
-              window.location.href = checkout.url;
-              return;
-            }
-          }
-          router.push('/search');
-        }
+        // Show confirmation email screen
+        setConfirmationSent(true);
+        setLoading(false);
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
@@ -150,7 +149,42 @@ function LoginContent() {
           </div>
         )}
 
+        {confirmationSent ? (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
+            <div className="text-4xl mb-3">✉️</div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Check your email!</h2>
+            <p className="text-sm text-gray-600">
+              We sent a confirmation link to <strong>{email}</strong>.
+              Click it to verify your account, then you can log in.
+            </p>
+            <button
+              onClick={() => { setConfirmationSent(false); setMode('login'); }}
+              className="mt-4 text-sm text-green-600 hover:text-green-700 font-medium"
+            >
+              Go to Log In
+            </button>
+          </div>
+        ) : (
+
         <form onSubmit={handleSubmit}>
+          {mode === 'signup' && (
+            <div className="mb-4">
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                First name
+              </label>
+              <input
+                id="firstName"
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Your first name"
+                required
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition"
+                autoFocus
+              />
+            </div>
+          )}
+
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email address
@@ -163,7 +197,6 @@ function LoginContent() {
               placeholder="you@example.com"
               required
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition"
-              autoFocus
             />
           </div>
 
@@ -213,6 +246,8 @@ function LoginContent() {
               : 'Log in'}
           </button>
         </form>
+
+        )}
 
         <div className="text-center mt-8">
           <Link href="/" className="text-sm text-gray-500 hover:text-gray-700 transition">
