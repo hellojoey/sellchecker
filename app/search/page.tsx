@@ -4,6 +4,8 @@ import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 import SearchBar from '@/components/SearchBar';
 import SearchResults from '@/components/SearchResults';
+import ProTools from '@/components/ProTools';
+import { createClient } from '@/lib/supabase/client';
 import type { SellThroughResult } from '@/lib/sellthrough';
 
 function SearchContent() {
@@ -13,6 +15,26 @@ function SearchContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [isPro, setIsPro] = useState(false);
+
+  // Check user plan on mount
+  useEffect(() => {
+    const checkPlan = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('plan')
+          .eq('id', user.id)
+          .single();
+        if (data?.plan === 'pro') {
+          setIsPro(true);
+        }
+      }
+    };
+    checkPlan();
+  }, []);
 
   useEffect(() => {
     if (query) {
@@ -90,6 +112,9 @@ function SearchContent() {
       {result && !loading && (
         <div className="animate-fade-in">
           <SearchResults result={result} />
+
+          {/* Pro Tools — shown for Pro users, locked teaser for free */}
+          <ProTools result={result} isPro={isPro} />
 
           {/* Search again prompt */}
           <div className="text-center mt-8">

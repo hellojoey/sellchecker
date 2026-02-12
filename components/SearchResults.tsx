@@ -34,7 +34,7 @@ export default function SearchResults({ result, loading = false }: SearchResults
           &ldquo;{result.query}&rdquo;
         </h2>
         <p className="text-sm text-gray-500 mt-0.5">
-          {result.totalResults.toLocaleString()} results on {result.platform === 'ebay' ? 'eBay' : result.platform}
+          {result.totalResults.toLocaleString()} results on eBay
         </p>
       </div>
 

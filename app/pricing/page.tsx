@@ -14,11 +14,11 @@ const FREE_FEATURES = [
 
 const PRO_FEATURES = [
   'Unlimited searches',
+  'Interactive pricing slider — see what price sells fastest',
+  'Profit calculator — enter your cost, see net profit after eBay fees',
+  'Shipping cost estimator by zip code',
   'Search history dashboard',
   'Watchlist with price alerts',
-  'Weekly brand hot list',
-  'Profit calculator (enter cost, see margin)',
-  'Barcode scanner for in-store checks',
   'CSV export',
   'Priority support',
 ];
@@ -166,8 +166,8 @@ export default function PricingPage() {
                 a: 'Yes! 5 searches per day, forever free. No credit card needed. We want every reseller to have access to good data.',
               },
               {
-                q: 'Will you add more platforms?',
-                a: 'Poshmark and Mercari data are on our roadmap. We are starting with eBay because it has the deepest marketplace data.',
+                q: 'Why eBay only?',
+                a: 'eBay has the deepest marketplace data with real sold prices and volumes. We focus on doing one thing really well — giving you the best eBay reseller data possible.',
               },
             ].map((faq) => (
               <div key={faq.q} className="bg-white rounded-xl p-6 border border-gray-100">

@@ -93,14 +93,14 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Built for resellers, by resellers</h2>
           <p className="text-gray-600 max-w-2xl mx-auto mb-12">
-            Whether you flip thrift finds, run a Poshmark closet, or do retail arbitrage —
+            Whether you flip thrift finds, sell on eBay, or do retail arbitrage —
             SellChecker helps you make smarter sourcing decisions.
           </p>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { emoji: '🏪', title: 'Thrift Flippers', desc: 'Check brands on the spot while you shop' },
-              { emoji: '📱', title: 'Poshmark Sellers', desc: 'Know what your closet should stock' },
+              { emoji: '📱', title: 'eBay Sellers', desc: 'Know exactly what to list next' },
               { emoji: '🏷️', title: 'eBay PowerSellers', desc: 'Scale with data-driven sourcing' },
               { emoji: '🎯', title: 'Retail Arbitrage', desc: 'Scan clearance with confidence' },
             ].map((item) => (
@@ -159,19 +159,16 @@ export default function HomePage() {
                   <span className="text-green-500">✓</span> Unlimited searches
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Search history dashboard
+                  <span className="text-green-500">✓</span> Pricing slider — best price to sell fast
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Watchlist with alerts
+                  <span className="text-green-500">✓</span> Profit calculator with eBay fees
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Brand hot list (weekly)
+                  <span className="text-green-500">✓</span> Shipping cost estimator
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Profit calculator
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Barcode scanner
+                  <span className="text-green-500">✓</span> Search history + watchlist
                 </li>
               </ul>
             </div>
