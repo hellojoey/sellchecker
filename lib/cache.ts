@@ -26,6 +26,21 @@ export async function getCachedResult(
   return data;
 }
 
+// Flush all cached results (admin operation)
+export async function flushAllCache(supabase: any): Promise<number> {
+  const { data, error, count } = await supabase
+    .from('search_cache')
+    .delete()
+    .neq('query_hash', '')  // match all rows
+    .select('query_hash', { count: 'exact', head: true });
+
+  if (error) {
+    console.error('Cache flush error:', error);
+    throw error;
+  }
+  return count || 0;
+}
+
 // Store result in cache
 export async function setCachedResult(
   supabase: any,

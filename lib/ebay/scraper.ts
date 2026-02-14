@@ -29,7 +29,7 @@ export async function scrapeEbaySoldData(query: string): Promise<ScrapedSoldData
 
   try {
     const encodedQuery = encodeURIComponent(query);
-    const url = `https://www.ebay.com/sch/i.html?_nkw=${encodedQuery}&LH_Sold=1&LH_Complete=1&LH_BIN=1&_ipg=240&rt=nc`;
+    const url = `https://www.ebay.com/sch/i.html?_nkw=${encodedQuery}&LH_Sold=1&LH_Complete=1&_ipg=240&rt=nc`;
 
     const response = await fetch(url, {
       headers: {
