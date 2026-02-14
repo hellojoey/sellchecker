@@ -10,8 +10,8 @@ export async function getEbayToken(): Promise<string> {
     return cachedToken;
   }
 
-  const appId = process.env.EBAY_APP_ID;
-  const certId = process.env.EBAY_CERT_ID;
+  const appId = process.env.EBAY_APP_ID || process.env.EBAY_CLIENT_ID;
+  const certId = process.env.EBAY_CERT_ID || process.env.EBAY_CLIENT_SECRET;
 
   if (!appId || !certId) {
     throw new Error('Missing eBay API credentials');
