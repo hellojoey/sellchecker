@@ -35,6 +35,9 @@ export default function SearchResults({ result, loading = false }: SearchResults
         </h2>
         <p className="text-sm text-gray-500 mt-0.5">
           {result.totalResults.toLocaleString()} results on eBay
+          {result.dataSource === 'estimated' && (
+            <span className="text-xs text-amber-500 ml-1">(estimated)</span>
+          )}
         </p>
       </div>
 

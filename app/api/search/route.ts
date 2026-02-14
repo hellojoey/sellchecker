@@ -3,9 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchEbay } from '@/lib/ebay/browse';
 import { hashQuery, normalizeQuery, getCachedResult, setCachedResult } from '@/lib/cache';
-import { createServiceClient } from '@/lib/supabase/server';
-
-const FREE_LIMIT = parseInt(process.env.NEXT_PUBLIC_FREE_SEARCH_LIMIT || '5');
+import { createServerSupabase, createServiceClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get('q');
@@ -24,7 +22,7 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createServiceClient();
 
-    // 1. Check cache first
+    // 1. Check cache first — cache hits are free for everyone
     const cached = await getCachedResult(supabase, queryHash);
     if (cached) {
       return NextResponse.json({
@@ -43,23 +41,60 @@ export async function GET(request: NextRequest) {
           platform: 'ebay',
           cachedAt: cached.cached_at,
           topListings: cached.raw_data?.topListings || [],
+          dataSource: cached.raw_data?.dataSource || 'estimated',
         },
         cached: true,
       });
     }
 
-    // 2. Not cached — call eBay API
+    // 2. Cache miss — check auth + rate limit before calling eBay API
+    let user: any = null;
+    try {
+      const authSupabase = createServerSupabase();
+      const { data } = await authSupabase.auth.getUser();
+      user = data?.user;
+    } catch {
+      // Auth check failed — proceed as anonymous
+    }
+
+    if (user) {
+      const { data: allowed, error: limitError } = await supabase
+        .rpc('check_search_limit', { p_user_id: user.id });
+
+      if (!limitError && allowed === false) {
+        return NextResponse.json(
+          { error: 'Daily search limit reached. Upgrade to Pro for unlimited SellChecks!' },
+          { status: 429 }
+        );
+      }
+    }
+
+    // 3. Call eBay API (Browse API + scraper in parallel)
     const result = await searchEbay(normalized);
 
-    // 3. Cache the result
+    // 4. Cache the result
     await setCachedResult(supabase, queryHash, normalized, result);
 
-    // 4. Track trending (fire and forget)
+    // 5. Track trending (fire and forget)
     trackTrending(supabase, normalized).catch(() => {});
+
+    // 6. Get remaining searches for free users
+    let remainingSearches: number | null = null;
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('plan, searches_today')
+        .eq('id', user.id)
+        .single();
+      if (profile?.plan === 'free') {
+        remainingSearches = Math.max(0, 5 - (profile.searches_today || 0));
+      }
+    }
 
     return NextResponse.json({
       result,
       cached: false,
+      remainingSearches,
     });
 
   } catch (error: any) {

@@ -1,11 +1,12 @@
-// eBay Browse API — Search active + sold listings
+// eBay Browse API + Sold Listings Scraper — Hybrid approach for real sell-through data
 import { getEbayToken } from './auth';
 import type { EbaySearchResponse, EbayItemSummary } from './types';
 import { calculateSellThrough, getVerdict, median, type SellThroughResult, type TopListing } from '../sellthrough';
+import { scrapeEbaySoldData, calculateAvgDaysToSell } from './scraper';
 
 const EBAY_BROWSE_API = 'https://api.ebay.com/buy/browse/v1';
 
-// Search active listings
+// Search active listings via eBay Browse API
 async function searchActive(query: string, limit = 50): Promise<EbaySearchResponse> {
   const token = await getEbayToken();
 
@@ -31,36 +32,6 @@ async function searchActive(query: string, limit = 50): Promise<EbaySearchRespon
   return response.json();
 }
 
-// Search completed/sold listings (using filter)
-async function searchSold(query: string, limit = 50): Promise<EbaySearchResponse> {
-  const token = await getEbayToken();
-
-  // The Browse API can filter for sold items in the last 90 days
-  const params = new URLSearchParams({
-    q: query,
-    limit: limit.toString(),
-    filter: 'buyingOptions:{FIXED_PRICE},priceCurrency:USD',
-    sort: '-endDate',
-  });
-
-  // Note: For sold data we may need the Finding API's findCompletedItems
-  // or Marketplace Insights API. For MVP, we estimate from active data.
-  const response = await fetch(`${EBAY_BROWSE_API}/item_summary/search?${params}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`eBay sold search error: ${response.status} ${error}`);
-  }
-
-  return response.json();
-}
-
 // Extract prices from items
 function extractPrices(items: EbayItemSummary[]): number[] {
   return items
@@ -70,7 +41,6 @@ function extractPrices(items: EbayItemSummary[]): number[] {
 
 // Extract top listings for Comp Check (6 diverse listings)
 function extractTopListings(items: EbayItemSummary[], count = 6): TopListing[] {
-  // Filter to items with images, sort by price to get a range
   const withImages = items.filter(item => item.image?.imageUrl);
   const sorted = [...withImages].sort((a, b) =>
     parseFloat(a.price.value) - parseFloat(b.price.value)
@@ -100,27 +70,47 @@ function mapToTopListing(item: EbayItemSummary): TopListing {
   };
 }
 
-// Main search function — combines active + sold data
+// Main search function — Browse API (active) + Scraper (sold) in parallel
 export async function searchEbay(query: string): Promise<SellThroughResult> {
   try {
-    // Fetch active listings
-    const activeResponse = await searchActive(query, 200);
+    // Run Browse API and sold scraper in parallel
+    const [activeResult, soldResult] = await Promise.allSettled([
+      searchActive(query, 200),
+      scrapeEbaySoldData(query),
+    ]);
+
+    // Active data from Browse API (required — throw if this fails)
+    if (activeResult.status === 'rejected') {
+      throw activeResult.reason;
+    }
+    const activeResponse = activeResult.value;
     const activeItems = activeResponse.itemSummaries || [];
     const activeCount = activeResponse.total || activeItems.length;
 
-    // For MVP, we estimate sold count from total vs active ratio
-    // Once we get Marketplace Insights API access, we'll use real sold data
-    // For now, use a secondary search with different params to approximate
-    const soldResponse = await searchActive(query + ' -new -sealed', 100);
-    const soldItems = soldResponse.itemSummaries || [];
-    
-    // Use total from browse as approximation (will refine with real sold data)
-    const estimatedSoldCount = Math.round(activeCount * 0.4); // conservative estimate
-    const soldCount90d = Math.max(estimatedSoldCount, soldItems.length);
+    // Sold data from scraper (optional — fall back to estimation)
+    const soldData = soldResult.status === 'fulfilled' ? soldResult.value : null;
 
-    const allPrices = extractPrices(activeItems);
-    const soldPrices = extractPrices(soldItems);
-    const prices = soldPrices.length > 0 ? soldPrices : allPrices;
+    let soldCount90d: number;
+    let soldPrices: number[];
+    let avgDaysToSell: number;
+    let dataSource: 'scraped' | 'estimated';
+
+    if (soldData?.success && soldData.soldCount > 0) {
+      soldCount90d = soldData.soldCount;
+      soldPrices = soldData.soldPrices;
+      avgDaysToSell = calculateAvgDaysToSell(soldData.soldDates) || 7;
+      dataSource = 'scraped';
+    } else {
+      // Fallback: estimate from active count
+      soldCount90d = Math.round(activeCount * 0.4);
+      soldPrices = [];
+      avgDaysToSell = Math.round(Math.random() * 14 + 3);
+      dataSource = 'estimated';
+    }
+
+    // Use scraped sold prices when we have enough, otherwise use active prices
+    const activePrices = extractPrices(activeItems);
+    const prices = soldPrices.length > 5 ? soldPrices : activePrices;
 
     const sellThroughRate = calculateSellThrough(soldCount90d, activeCount);
 
@@ -135,11 +125,12 @@ export async function searchEbay(query: string): Promise<SellThroughResult> {
       medianSoldPrice: Math.round(median(prices) * 100) / 100,
       priceLow: prices.length > 0 ? Math.min(...prices) : 0,
       priceHigh: prices.length > 0 ? Math.max(...prices) : 0,
-      avgDaysToSell: Math.round(Math.random() * 14 + 3), // placeholder until we have real sold-date data
+      avgDaysToSell,
       verdict: getVerdict(sellThroughRate),
       totalResults: activeCount + soldCount90d,
       platform: 'ebay',
       topListings: extractTopListings(activeItems),
+      dataSource,
     };
   } catch (error) {
     console.error('eBay search error:', error);

@@ -28,6 +28,7 @@ export interface SellThroughResult {
   platform: string;
   cachedAt?: string;
   topListings?: TopListing[];
+  dataSource?: 'scraped' | 'estimated';
 }
 
 export function calculateSellThrough(sold: number, active: number): number {
