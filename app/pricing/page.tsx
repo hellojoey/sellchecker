@@ -8,18 +8,19 @@ const FREE_FEATURES = [
   '5 SellChecks per day',
   'Sell-through rate + BUY/MAYBE/PASS verdict',
   'New/Used condition filter',
-  'Deal Calculator — COG, shipping, and profit breakdown',
-  'Price-to-Speed preview (locked at median)',
-  'Comp Check + Sourcing Calculator',
+  'Stats grid — sold count, active listings, avg price',
+  'Price range breakdown (low / median / high)',
 ];
 
 const PRO_FEATURES = [
   'Unlimited SellChecks — never run out at the thrift store',
   'Smart Insights — contextual tips per search',
+  'Deal Calculator — profit after fees and shipping',
   'Interactive Price-to-Speed slider',
+  'Competitor Check — see active listings and prices',
+  'Sourcing Calculator — max buy price at target ROI',
   'Saved Searches with COG tracking',
   'Profile & default settings',
-  'Everything in Free, plus priority support',
 ];
 
 export default function PricingPage() {

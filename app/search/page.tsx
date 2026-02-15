@@ -8,7 +8,7 @@ import CompCheck from '@/components/CompCheck';
 import SourcingCalc from '@/components/SourcingCalc';
 import PriceSpeedSlider from '@/components/PriceSpeedSlider';
 import DealCalculator from '@/components/DealCalculator';
-import ProTeaser from '@/components/ProTeaser';
+import ProFeatureCatalog from '@/components/ProFeatureCatalog';
 import ConditionFilter, { type ConditionValue } from '@/components/ConditionFilter';
 import TrendingSearches from '@/components/TrendingSearches';
 import SaveSearchButton from '@/components/SaveSearchButton';
@@ -157,25 +157,25 @@ function SearchContent() {
           {/* Main results card with Smart Insights inline */}
           <SearchResults result={result} isPro={isPro} />
 
+          {/* Deal Calculator — locked for free, interactive for Pro */}
+          <DealCalculator result={result} isPro={isPro} />
+
           {/* Action bar — Save Search button */}
           <div className="flex items-center justify-end mt-3 mb-2">
             <SaveSearchButton result={result} isPro={isPro} isLoggedIn={isLoggedIn} />
           </div>
 
-          {/* Comp Check — free for everyone */}
-          <CompCheck listings={result.topListings || []} query={result.query} />
+          {/* Pro-only components — completely hidden for free users */}
+          {isPro && (
+            <>
+              <CompCheck listings={result.topListings || []} query={result.query} />
+              <PriceSpeedSlider result={result} isPro={isPro} />
+              <SourcingCalc result={result} />
+            </>
+          )}
 
-          {/* Price vs. Speed — locked preview (free) / interactive (Pro) */}
-          <PriceSpeedSlider result={result} isPro={isPro} />
-
-          {/* Deal Calculator — COG + shipping + profit (free for everyone) */}
-          <DealCalculator result={result} />
-
-          {/* Sourcing Calculator — free for everyone */}
-          <SourcingCalc result={result} />
-
-          {/* Pro teaser for free users — marketing cards */}
-          {!isPro && <ProTeaser />}
+          {/* Pro feature showcase catalog for free users */}
+          {!isPro && <ProFeatureCatalog />}
 
           {/* Footer */}
           <div className="text-center mt-8">

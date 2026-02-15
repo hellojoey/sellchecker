@@ -136,10 +136,10 @@ export default function HomePage() {
                   <span className="text-green-500">✓</span> Sell-through rate + verdict
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Deal Calculator + condition filter
+                  <span className="text-green-500">✓</span> Condition filter + stats grid
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Comp Check + Sourcing Calculator
+                  <span className="text-green-500">✓</span> Price range breakdown
                 </li>
               </ul>
             </div>
@@ -162,10 +162,10 @@ export default function HomePage() {
                   <span className="text-green-500">✓</span> Smart Insights — tips per search
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Interactive Price-to-Speed slider
+                  <span className="text-green-500">✓</span> Deal Calculator + Sourcing tools
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Saved Searches + profile
+                  <span className="text-green-500">✓</span> Price-to-Speed slider + Saved Searches
                 </li>
               </ul>
             </div>
