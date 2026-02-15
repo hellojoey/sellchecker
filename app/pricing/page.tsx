@@ -7,7 +7,6 @@ import { createClient } from '@/lib/supabase/client';
 const FREE_FEATURES = [
   '5 SellChecks per day',
   'Sell-through rate + BUY/MAYBE/PASS verdict',
-  'New/Used condition filter',
   'Stats grid — sold count, active listings, avg price',
   'Price range breakdown (low / median / high)',
 ];
@@ -15,6 +14,7 @@ const FREE_FEATURES = [
 const PRO_FEATURES = [
   'Unlimited SellChecks — never run out at the thrift store',
   'Smart Insights — contextual tips per search',
+  'New/Used condition filter',
   'Deal Calculator — profit after fees and shipping',
   'Interactive Price-to-Speed slider',
   'Competitor Check — see active listings and prices',

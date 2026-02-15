@@ -4,14 +4,25 @@ import type { SellThroughResult } from '@/lib/sellthrough';
 import SellThroughGauge from './SellThroughGauge';
 import VerdictBadge from './VerdictBadge';
 import SmartInsights from './SmartInsights';
+import ConditionFilter, { type ConditionValue } from './ConditionFilter';
+import PriceSpeedSlider from './PriceSpeedSlider';
+import DealCalculator from './DealCalculator';
 
 interface SearchResultsProps {
   result: SellThroughResult;
   loading?: boolean;
   isPro?: boolean;
+  condition: ConditionValue;
+  onConditionChange: (condition: ConditionValue) => void;
 }
 
-export default function SearchResults({ result, loading = false, isPro = false }: SearchResultsProps) {
+export default function SearchResults({
+  result,
+  loading = false,
+  isPro = false,
+  condition,
+  onConditionChange,
+}: SearchResultsProps) {
   if (loading) {
     return (
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 animate-pulse">
@@ -32,15 +43,25 @@ export default function SearchResults({ result, loading = false, isPro = false }
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-gray-50 to-white px-6 py-4 border-b border-gray-100">
-        <h2 className="text-lg font-semibold text-gray-900">
-          &ldquo;{result.query}&rdquo;
-        </h2>
-        <p className="text-sm text-gray-500 mt-0.5">
-          {result.totalResults.toLocaleString()} results on eBay
-          {result.dataSource === 'estimated' && (
-            <span className="text-xs text-amber-500 ml-1">(estimated)</span>
-          )}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">
+              &ldquo;{result.query}&rdquo;
+            </h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {result.totalResults.toLocaleString()} results on eBay
+              {result.dataSource === 'estimated' && (
+                <span className="text-xs text-amber-500 ml-1">(estimated)</span>
+              )}
+            </p>
+          </div>
+          {/* Condition Filter — greyed out for free */}
+          <ConditionFilter
+            value={condition}
+            onChange={onConditionChange}
+            disabled={!isPro}
+          />
+        </div>
       </div>
 
       <div className="p-6">
@@ -104,6 +125,18 @@ export default function SearchResults({ result, loading = false, isPro = false }
             <span className="text-gray-500">${result.priceHigh.toFixed(0)}</span>
           </div>
         </div>
+
+        {/* ── Divider ── */}
+        <hr className="border-gray-100 my-6" />
+
+        {/* Price vs. Speed Slider — embedded in card */}
+        <PriceSpeedSlider result={result} isPro={isPro} embedded />
+
+        {/* ── Divider ── */}
+        <hr className="border-gray-100 my-6" />
+
+        {/* Deal Calculator — embedded in card */}
+        <DealCalculator result={result} isPro={isPro} embedded />
       </div>
     </div>
   );

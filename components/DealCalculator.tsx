@@ -6,6 +6,7 @@ import type { SellThroughResult } from '@/lib/sellthrough';
 interface DealCalculatorProps {
   result: SellThroughResult;
   isPro?: boolean;
+  embedded?: boolean;
 }
 
 // eBay fee structure (2024/2025 standard)
@@ -20,14 +21,14 @@ const SHIPPING_OPTIONS = [
   { label: 'Oversized', desc: '5+ lbs', local: 14.00, regional: 19.50, national: 25.00 },
 ];
 
-export default function DealCalculator({ result, isPro = false }: DealCalculatorProps) {
+export default function DealCalculator({ result, isPro = false, embedded = false }: DealCalculatorProps) {
   const [costOfGoods, setCostOfGoods] = useState('');
   const [selectedWeight, setSelectedWeight] = useState<number | null>(null);
   const [shippingOverride, setShippingOverride] = useState('');
 
   const salePrice = result.medianSoldPrice;
 
-  // --- Locked preview for free users ---
+  // --- Greyed-out preview for free users ---
   if (!isPro) {
     const exCOG = 5.00;
     const mediumRate = SHIPPING_OPTIONS[1];
@@ -36,95 +37,93 @@ export default function DealCalculator({ result, isPro = false }: DealCalculator
     const exProfit = salePrice - exCOG - exShipping - exFees;
     const exROI = (exProfit / exCOG) * 100;
 
+    const content = (
+      <>
+        {/* Section header */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+            <span>💰</span> Deal Calculator
+            <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded">PRO</span>
+          </h3>
+          <a href="/pricing" className="text-xs text-green-600 font-medium hover:underline">
+            Upgrade to unlock
+          </a>
+        </div>
+
+        {/* Greyed-out content */}
+        <div className="space-y-4">
+          {/* COG Input — disabled */}
+          <div>
+            <div className="block text-xs font-medium text-gray-400 mb-1.5">What did you pay?</div>
+            <div className="relative max-w-[200px]">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-sm">$</span>
+              <input
+                type="text"
+                disabled
+                placeholder="Upgrade to Pro"
+                className="w-full pl-7 pr-3 py-2.5 rounded-lg border border-gray-200 bg-gray-100 text-sm text-gray-400 cursor-not-allowed"
+              />
+            </div>
+          </div>
+
+          {/* Weight buttons — greyed out, non-interactive */}
+          <div>
+            <div className="block text-xs font-medium text-gray-400 mb-1.5">Estimated shipping weight</div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {SHIPPING_OPTIONS.map((opt, idx) => (
+                <div
+                  key={idx}
+                  className={`text-left rounded-lg p-2.5 border-2 text-xs opacity-50 cursor-not-allowed ${
+                    idx === 1 ? 'border-gray-300 bg-gray-50' : 'border-gray-100'
+                  }`}
+                >
+                  <div className="font-medium text-gray-500">{opt.label}</div>
+                  <div className="text-gray-400">{opt.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Static profit breakdown — muted tones */}
+          <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Median sale price</span>
+              <span className="text-gray-500 font-medium">${salePrice.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">eBay fees (13.25% + $0.30)</span>
+              <span className="text-gray-400">-${exFees.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Cost of goods</span>
+              <span className="text-gray-400">-${exCOG.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Shipping (Medium)</span>
+              <span className="text-gray-400">-${exShipping.toFixed(2)}</span>
+            </div>
+            <hr className="border-gray-200" />
+            <div className="flex justify-between text-sm font-bold">
+              <span className="text-gray-400">Net profit</span>
+              <span className="text-gray-400">
+                {exProfit >= 0 ? '' : '-'}${Math.abs(exProfit).toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">Return on investment</span>
+              <span className="text-gray-400">+{exROI.toFixed(0)}% ROI</span>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+
+    if (embedded) return content;
+
     return (
       <div className="mt-6">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden relative">
-          {/* Header — readable, not blurred */}
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <span>💰</span> Deal Calculator
-              <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded">PRO</span>
-            </h3>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Enter what you paid — see your real profit after fees and shipping
-            </p>
-          </div>
-
-          {/* Blurred static example content */}
-          <div className="p-6 space-y-5 blur-[2px] opacity-60 select-none pointer-events-none">
-            {/* Static COG */}
-            <div>
-              <div className="block text-xs font-medium text-gray-600 mb-1.5">What did you pay?</div>
-              <div className="max-w-[200px] bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 pl-7 relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                5.00
-              </div>
-            </div>
-
-            {/* Static weight buttons */}
-            <div>
-              <div className="block text-xs font-medium text-gray-600 mb-1.5">Estimated shipping weight</div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {SHIPPING_OPTIONS.map((opt, idx) => (
-                  <div
-                    key={idx}
-                    className={`text-left rounded-lg p-2.5 border-2 text-xs ${
-                      idx === 1
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-100'
-                    }`}
-                  >
-                    <div className="font-medium text-gray-900">{opt.label}</div>
-                    <div className="text-gray-400">{opt.desc}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Static profit breakdown */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Median sale price</span>
-                <span className="text-gray-900 font-medium">${salePrice.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">eBay fees (13.25% + $0.30)</span>
-                <span className="text-red-600">-${exFees.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Cost of goods</span>
-                <span className="text-red-600">-${exCOG.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Shipping (Medium)</span>
-                <span className="text-red-600">-${exShipping.toFixed(2)}</span>
-              </div>
-              <hr className="border-gray-200" />
-              <div className="flex justify-between text-sm font-bold">
-                <span className={exProfit >= 0 ? 'text-green-700' : 'text-red-700'}>Net profit</span>
-                <span className={exProfit >= 0 ? 'text-green-700' : 'text-red-700'}>
-                  {exProfit >= 0 ? '' : '-'}${Math.abs(exProfit).toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Return on investment</span>
-                <span className="text-green-600 font-medium">+{exROI.toFixed(0)}% ROI</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Lock overlay — covers content area below header */}
-          <div className="absolute inset-0 top-[65px] flex items-center justify-center bg-white/20">
-            <a
-              href="/pricing"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-white border border-green-200 px-4 py-2 rounded-full shadow-sm hover:bg-green-50 transition"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-              Unlock Deal Calculator with Pro
-            </a>
-          </div>
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden p-6">
+          {content}
         </div>
       </div>
     );
@@ -133,7 +132,6 @@ export default function DealCalculator({ result, isPro = false }: DealCalculator
   // --- Interactive version for Pro users ---
   const costNum = parseFloat(costOfGoods) || 0;
 
-  // Shipping cost: manual override > selected weight average > 0
   let shippingCost = 0;
   if (shippingOverride) {
     shippingCost = parseFloat(shippingOverride) || 0;
@@ -145,140 +143,146 @@ export default function DealCalculator({ result, isPro = false }: DealCalculator
   const ebayFees = salePrice * EBAY_FVF + EBAY_ORDER_FEE;
   const netProfit = salePrice - costNum - shippingCost - ebayFees;
   const roi = costNum > 0 ? ((netProfit / costNum) * 100) : 0;
-
   const hasCost = costNum > 0;
 
-  return (
-    <div className="mt-6">
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-            <span>💰</span> Deal Calculator
-          </h3>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Enter what you paid — see your real profit after fees and shipping
-          </p>
+  const proContent = (
+    <>
+      {/* Section header */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+          <span>💰</span> Deal Calculator
+        </h3>
+        <p className="text-xs text-gray-500">
+          Enter what you paid — see your real profit
+        </p>
+      </div>
+
+      <div className="space-y-5">
+        {/* COG Input */}
+        <div>
+          <label htmlFor="deal-cog" className="block text-xs font-medium text-gray-600 mb-1.5">
+            What did you pay?
+          </label>
+          <div className="relative max-w-[200px]">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+            <input
+              id="deal-cog"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="e.g. 5.00"
+              value={costOfGoods}
+              onChange={(e) => setCostOfGoods(e.target.value)}
+              className="w-full pl-7 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+              autoComplete="off"
+            />
+          </div>
         </div>
 
-        <div className="p-6 space-y-5">
-          {/* COG Input */}
-          <div>
-            <label htmlFor="deal-cog" className="block text-xs font-medium text-gray-600 mb-1.5">
-              What did you pay?
-            </label>
+        {/* Shipping Weight Selector */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">
+            Estimated shipping weight
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {SHIPPING_OPTIONS.map((opt, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  setSelectedWeight(idx);
+                  setShippingOverride('');
+                }}
+                className={`text-left rounded-lg p-2.5 border-2 transition text-xs ${
+                  idx === selectedWeight
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-100 hover:border-gray-200'
+                }`}
+              >
+                <div className="font-medium text-gray-900">{opt.label}</div>
+                <div className="text-gray-400">{opt.desc}</div>
+              </button>
+            ))}
+          </div>
+
+          {selectedWeight !== null && (
+            <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
+              <span>Est. ${shippingCost.toFixed(2)} avg</span>
+              <span className="text-gray-300">|</span>
+              <span>Local ${SHIPPING_OPTIONS[selectedWeight].local.toFixed(2)}</span>
+              <span>Nat&apos;l ${SHIPPING_OPTIONS[selectedWeight].national.toFixed(2)}</span>
+            </div>
+          )}
+
+          <div className="mt-2">
             <div className="relative max-w-[200px]">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
               <input
-                id="deal-cog"
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="e.g. 5.00"
-                value={costOfGoods}
-                onChange={(e) => setCostOfGoods(e.target.value)}
-                className="w-full pl-7 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                placeholder="Or enter exact shipping"
+                value={shippingOverride}
+                onChange={(e) => {
+                  setShippingOverride(e.target.value);
+                  if (e.target.value) setSelectedWeight(null);
+                }}
+                className="w-full pl-7 pr-3 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
                 autoComplete="off"
               />
             </div>
           </div>
-
-          {/* Shipping Weight Selector */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">
-              Estimated shipping weight
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {SHIPPING_OPTIONS.map((opt, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setSelectedWeight(idx);
-                    setShippingOverride('');
-                  }}
-                  className={`text-left rounded-lg p-2.5 border-2 transition text-xs ${
-                    idx === selectedWeight
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-100 hover:border-gray-200'
-                  }`}
-                >
-                  <div className="font-medium text-gray-900">{opt.label}</div>
-                  <div className="text-gray-400">{opt.desc}</div>
-                </button>
-              ))}
-            </div>
-
-            {/* Shipping rate detail */}
-            {selectedWeight !== null && (
-              <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
-                <span>Est. ${shippingCost.toFixed(2)} avg</span>
-                <span className="text-gray-300">|</span>
-                <span>Local ${SHIPPING_OPTIONS[selectedWeight].local.toFixed(2)}</span>
-                <span>Nat&apos;l ${SHIPPING_OPTIONS[selectedWeight].national.toFixed(2)}</span>
-              </div>
-            )}
-
-            {/* Manual override */}
-            <div className="mt-2">
-              <div className="relative max-w-[200px]">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="Or enter exact shipping"
-                  value={shippingOverride}
-                  onChange={(e) => {
-                    setShippingOverride(e.target.value);
-                    if (e.target.value) setSelectedWeight(null);
-                  }}
-                  className="w-full pl-7 pr-3 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-                  autoComplete="off"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Profit Breakdown */}
-          <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Median sale price</span>
-              <span className="text-gray-900 font-medium">${salePrice.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">eBay fees (13.25% + $0.30)</span>
-              <span className="text-red-600">-${ebayFees.toFixed(2)}</span>
-            </div>
-            {hasCost && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Cost of goods</span>
-                <span className="text-red-600">-${costNum.toFixed(2)}</span>
-              </div>
-            )}
-            {shippingCost > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Shipping</span>
-                <span className="text-red-600">-${shippingCost.toFixed(2)}</span>
-              </div>
-            )}
-            <hr className="border-gray-200" />
-            <div className="flex justify-between text-sm font-bold">
-              <span className={netProfit >= 0 ? 'text-green-700' : 'text-red-700'}>
-                Net profit
-              </span>
-              <span className={netProfit >= 0 ? 'text-green-700' : 'text-red-700'}>
-                {netProfit >= 0 ? '' : '-'}${Math.abs(netProfit).toFixed(2)}
-              </span>
-            </div>
-            {hasCost && (
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Return on investment</span>
-                <span className={roi >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-                  {roi >= 0 ? '+' : ''}{roi.toFixed(0)}% ROI
-                </span>
-              </div>
-            )}
-          </div>
         </div>
+
+        {/* Profit Breakdown */}
+        <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Median sale price</span>
+            <span className="text-gray-900 font-medium">${salePrice.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">eBay fees (13.25% + $0.30)</span>
+            <span className="text-red-600">-${ebayFees.toFixed(2)}</span>
+          </div>
+          {hasCost && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Cost of goods</span>
+              <span className="text-red-600">-${costNum.toFixed(2)}</span>
+            </div>
+          )}
+          {shippingCost > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Shipping</span>
+              <span className="text-red-600">-${shippingCost.toFixed(2)}</span>
+            </div>
+          )}
+          <hr className="border-gray-200" />
+          <div className="flex justify-between text-sm font-bold">
+            <span className={netProfit >= 0 ? 'text-green-700' : 'text-red-700'}>
+              Net profit
+            </span>
+            <span className={netProfit >= 0 ? 'text-green-700' : 'text-red-700'}>
+              {netProfit >= 0 ? '' : '-'}${Math.abs(netProfit).toFixed(2)}
+            </span>
+          </div>
+          {hasCost && (
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-500">Return on investment</span>
+              <span className={roi >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                {roi >= 0 ? '+' : ''}{roi.toFixed(0)}% ROI
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+
+  if (embedded) return proContent;
+
+  return (
+    <div className="mt-6">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden p-6">
+        {proContent}
       </div>
     </div>
   );

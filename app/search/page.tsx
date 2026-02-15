@@ -6,14 +6,12 @@ import SearchBar from '@/components/SearchBar';
 import SearchResults from '@/components/SearchResults';
 import CompCheck from '@/components/CompCheck';
 import SourcingCalc from '@/components/SourcingCalc';
-import PriceSpeedSlider from '@/components/PriceSpeedSlider';
-import DealCalculator from '@/components/DealCalculator';
 import ProFeatureCatalog from '@/components/ProFeatureCatalog';
-import ConditionFilter, { type ConditionValue } from '@/components/ConditionFilter';
 import TrendingSearches from '@/components/TrendingSearches';
 import SaveSearchButton from '@/components/SaveSearchButton';
 import { createClient } from '@/lib/supabase/client';
 import type { SellThroughResult } from '@/lib/sellthrough';
+import type { ConditionValue } from '@/components/ConditionFilter';
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -99,18 +97,15 @@ function SearchContent() {
         <SearchBar initialQuery={query} autoFocus />
       </div>
 
-      {/* Condition filter — show when we have a query */}
-      {query && (
-        <div className="flex items-center justify-between mb-4">
-          <ConditionFilter value={condition} onChange={handleConditionChange} disabled={loading} />
-          {remaining !== null && (
-            <span className="text-xs text-gray-500">
-              {remaining} left today
-              {remaining <= 1 && (
-                <span className="text-green-600 font-medium"> · <a href="/pricing" className="underline">Pro</a></span>
-              )}
-            </span>
-          )}
+      {/* Remaining searches counter */}
+      {query && remaining !== null && (
+        <div className="flex items-center justify-end mb-4">
+          <span className="text-xs text-gray-500">
+            {remaining} left today
+            {remaining <= 1 && (
+              <span className="text-green-600 font-medium"> · <a href="/pricing" className="underline">Pro</a></span>
+            )}
+          </span>
         </div>
       )}
 
@@ -154,22 +149,23 @@ function SearchContent() {
       {/* Results */}
       {result && !loading && (
         <div className="animate-fade-in">
-          {/* Main results card with Smart Insights inline */}
-          <SearchResults result={result} isPro={isPro} />
-
-          {/* Deal Calculator — locked for free, interactive for Pro */}
-          <DealCalculator result={result} isPro={isPro} />
+          {/* Unified results card — includes condition filter, slider, deal calc */}
+          <SearchResults
+            result={result}
+            isPro={isPro}
+            condition={condition}
+            onConditionChange={handleConditionChange}
+          />
 
           {/* Action bar — Save Search button */}
           <div className="flex items-center justify-end mt-3 mb-2">
             <SaveSearchButton result={result} isPro={isPro} isLoggedIn={isLoggedIn} />
           </div>
 
-          {/* Pro-only components — completely hidden for free users */}
+          {/* Pro-only separate cards — completely hidden for free users */}
           {isPro && (
             <>
               <CompCheck listings={result.topListings || []} query={result.query} />
-              <PriceSpeedSlider result={result} isPro={isPro} />
               <SourcingCalc result={result} />
             </>
           )}

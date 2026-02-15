@@ -302,23 +302,10 @@ export default function ProFeatureCatalog() {
       mockup: <InsightsMockup />,
     },
     {
-      title: 'Price vs. Speed Slider',
-      description:
-        'Drag to any price point and instantly see how fast it will sell. Find the sweet spot between speed and profit.',
-      mockup: <PriceSpeedMockup />,
-      reversed: true,
-    },
-    {
       title: 'Competitor Check',
       description:
         'See what your competition is listing right now. View their prices, conditions, and photos to price yours competitively.',
       mockup: <CompetitorMockup />,
-    },
-    {
-      title: 'Deal Calculator',
-      description:
-        'Enter what you paid, pick a shipping weight, and see your real profit after eBay fees. Know your margin before you list.',
-      mockup: <DealCalcMockup />,
       reversed: true,
     },
     {
