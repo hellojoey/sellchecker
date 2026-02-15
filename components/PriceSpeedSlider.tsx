@@ -13,7 +13,6 @@ interface PriceSpeedSliderProps {
 export default function PriceSpeedSlider({ result, isPro, embedded = false }: PriceSpeedSliderProps) {
   const { priceLow, priceHigh, medianSoldPrice, sellThroughRate } = result;
 
-  // Clamp slider min/max to reasonable bounds
   const sliderMin = Math.max(1, Math.floor(priceLow * 0.8));
   const sliderMax = Math.ceil(priceHigh * 1.1);
 
@@ -24,13 +23,11 @@ export default function PriceSpeedSlider({ result, isPro, embedded = false }: Pr
     [price, medianSoldPrice, sellThroughRate]
   );
 
-  // Estimate at the median (for free users' fixed view)
   const medianDays = useMemo(
     () => estimateDaysToSell(medianSoldPrice, medianSoldPrice, sellThroughRate),
     [medianSoldPrice, sellThroughRate]
   );
 
-  // Speed classification
   const getSpeedInfo = (days: number) => {
     if (days <= 7) return { label: 'Fast', color: 'text-green-600', barColor: 'bg-green-500', barWidth: 85 };
     if (days <= 14) return { label: 'Moderate', color: 'text-yellow-600', barColor: 'bg-yellow-500', barWidth: 55 };
@@ -42,8 +39,20 @@ export default function PriceSpeedSlider({ result, isPro, embedded = false }: Pr
   const displayDays = isPro ? estDays : medianDays;
   const speed = getSpeedInfo(displayDays);
 
-  // Slider position as percentage (for the locked indicator on free)
-  const medianPercent = ((medianSoldPrice - sliderMin) / (sliderMax - sliderMin)) * 100;
+  // Percentages for positioning elements on the track
+  const range = sliderMax - sliderMin;
+  const medianPercent = range > 0 ? ((medianSoldPrice - sliderMin) / range) * 100 : 50;
+  const handlePercent = range > 0 ? ((displayPrice - sliderMin) / range) * 100 : 50;
+  const gradientLeft = range > 0 ? ((priceLow - sliderMin) / range) * 100 : 0;
+  const gradientRight = range > 0 ? ((priceHigh - sliderMin) / range) * 100 : 100;
+  const gradientWidth = gradientRight - gradientLeft;
+
+  const handlePriceInput = (val: string) => {
+    const num = Number(val);
+    if (!isNaN(num) && num >= sliderMin && num <= sliderMax) {
+      setPrice(num);
+    }
+  };
 
   const content = (
     <>
@@ -60,12 +69,12 @@ export default function PriceSpeedSlider({ result, isPro, embedded = false }: Pr
       </div>
       <p className="text-xs text-gray-500 mb-4">
         {isPro
-          ? 'Drag the slider — see how price affects speed of sale'
+          ? 'Drag the slider or type a price — see how it affects speed of sale'
           : 'Adjust your listing price to see how fast it\u2019ll sell'}
       </p>
 
       {/* Big price + days display */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <div className="text-3xl font-bold text-gray-900">
             ${displayPrice.toFixed(0)}
@@ -81,7 +90,7 @@ export default function PriceSpeedSlider({ result, isPro, embedded = false }: Pr
       </div>
 
       {/* Speed bar */}
-      <div className="mb-6">
+      <div className="mb-5">
         <div className="flex items-center justify-between mb-1">
           <span className={`text-xs font-medium ${speed.color}`}>{speed.label}</span>
         </div>
@@ -93,32 +102,73 @@ export default function PriceSpeedSlider({ result, isPro, embedded = false }: Pr
         </div>
       </div>
 
-      {/* Slider */}
+      {/* Merged Price Range + Slider */}
       <div className="relative">
         {isPro ? (
-          /* Interactive slider for Pro */
-          <input
-            type="range"
-            min={sliderMin}
-            max={sliderMax}
-            step={1}
-            value={price}
-            onChange={(e) => setPrice(Number(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
-          />
+          <div className="relative">
+            {/* Gradient track (the price range bar) */}
+            <div className="relative h-4 bg-gray-200 rounded-full">
+              {/* Green gradient fill showing actual price range */}
+              <div
+                className="absolute h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full"
+                style={{
+                  left: `${gradientLeft}%`,
+                  width: `${gradientWidth}%`,
+                }}
+              />
+              {/* Median marker (small white dot) */}
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-white border border-green-800 rounded-full z-10"
+                style={{ left: `${medianPercent}%`, marginLeft: '-4px' }}
+              />
+            </div>
+            {/* Custom visual handle */}
+            <div
+              className="absolute top-0 w-5 h-5 bg-white border-2 border-green-600 rounded-full shadow-lg z-10 pointer-events-none transition-all duration-100"
+              style={{
+                left: `calc(${handlePercent}% - 10px)`,
+                top: '-2px',
+              }}
+            />
+            {/* Hidden native range input for drag + keyboard accessibility */}
+            <input
+              type="range"
+              min={sliderMin}
+              max={sliderMax}
+              step={1}
+              value={price}
+              onChange={(e) => setPrice(Number(e.target.value))}
+              className="absolute inset-0 w-full h-4 opacity-0 cursor-pointer z-20"
+            />
+          </div>
         ) : (
           /* Locked slider for free users */
           <div className="relative">
-            <div className="w-full h-2 bg-gray-200 rounded-lg" />
-            {/* Slider handle at median — looks like a real slider control */}
+            <div className="relative h-4 bg-gray-200 rounded-full">
+              <div
+                className="absolute h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full"
+                style={{
+                  left: `${gradientLeft}%`,
+                  width: `${gradientWidth}%`,
+                }}
+              />
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-white border border-green-800 rounded-full z-10"
+                style={{ left: `${medianPercent}%`, marginLeft: '-4px' }}
+              />
+            </div>
+            {/* Handle at median */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-300 border-2 border-white rounded-full shadow-md flex items-center justify-center"
-              style={{ left: `calc(${medianPercent}% - 12px)` }}
+              className="absolute top-0 w-6 h-6 bg-gray-300 border-2 border-white rounded-full shadow-md flex items-center justify-center"
+              style={{
+                left: `calc(${medianPercent}% - 12px)`,
+                top: '-3px',
+              }}
             >
               <span className="text-[8px] text-gray-500 leading-none">&#x27F7;</span>
             </div>
             {/* Lock overlay */}
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center" style={{ top: '-3px', height: 'calc(100% + 6px)' }}>
               <div className="absolute inset-0 bg-white/60 rounded-lg" />
               <a
                 href="/pricing"
@@ -133,13 +183,32 @@ export default function PriceSpeedSlider({ result, isPro, embedded = false }: Pr
           </div>
         )}
 
-        {/* Min / Median / Max labels */}
+        {/* Price labels */}
         <div className="flex justify-between mt-2 text-xs text-gray-400">
           <span>${sliderMin}</span>
           <span className="font-medium text-gray-600">Median: ${medianSoldPrice.toFixed(0)}</span>
           <span>${sliderMax}</span>
         </div>
       </div>
+
+      {/* Manual price input (Pro only) */}
+      {isPro && (
+        <div className="mt-3 flex items-center gap-2">
+          <label className="text-xs text-gray-500">Or enter price:</label>
+          <div className="relative w-24">
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">$</span>
+            <input
+              type="number"
+              min={sliderMin}
+              max={sliderMax}
+              step={1}
+              value={price}
+              onChange={(e) => handlePriceInput(e.target.value)}
+              className="w-full pl-5 pr-2 py-1.5 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 
@@ -159,14 +228,14 @@ export default function PriceSpeedSlider({ result, isPro, embedded = false }: Pr
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
             {isPro
-              ? 'Drag the slider — see how price affects speed of sale'
+              ? 'Drag the slider or type a price — see how it affects speed of sale'
               : 'Adjust your listing price to see how fast it\u2019ll sell'}
           </p>
         </div>
 
         <div className="p-6">
           {/* Big price + days display */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <div className="text-3xl font-bold text-gray-900">
                 ${displayPrice.toFixed(0)}
@@ -182,7 +251,7 @@ export default function PriceSpeedSlider({ result, isPro, embedded = false }: Pr
           </div>
 
           {/* Speed bar */}
-          <div className="mb-6">
+          <div className="mb-5">
             <div className="flex items-center justify-between mb-1">
               <span className={`text-xs font-medium ${speed.color}`}>{speed.label}</span>
             </div>
@@ -194,24 +263,61 @@ export default function PriceSpeedSlider({ result, isPro, embedded = false }: Pr
             </div>
           </div>
 
-          {/* Slider */}
+          {/* Merged Price Range + Slider */}
           <div className="relative">
             {isPro ? (
-              <input
-                type="range"
-                min={sliderMin}
-                max={sliderMax}
-                step={1}
-                value={price}
-                onChange={(e) => setPrice(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
-              />
+              <div className="relative">
+                <div className="relative h-4 bg-gray-200 rounded-full">
+                  <div
+                    className="absolute h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full"
+                    style={{
+                      left: `${gradientLeft}%`,
+                      width: `${gradientWidth}%`,
+                    }}
+                  />
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-white border border-green-800 rounded-full z-10"
+                    style={{ left: `${medianPercent}%`, marginLeft: '-4px' }}
+                  />
+                </div>
+                <div
+                  className="absolute top-0 w-5 h-5 bg-white border-2 border-green-600 rounded-full shadow-lg z-10 pointer-events-none transition-all duration-100"
+                  style={{
+                    left: `calc(${handlePercent}% - 10px)`,
+                    top: '-2px',
+                  }}
+                />
+                <input
+                  type="range"
+                  min={sliderMin}
+                  max={sliderMax}
+                  step={1}
+                  value={price}
+                  onChange={(e) => setPrice(Number(e.target.value))}
+                  className="absolute inset-0 w-full h-4 opacity-0 cursor-pointer z-20"
+                />
+              </div>
             ) : (
               <div className="relative">
-                <div className="w-full h-2 bg-gray-200 rounded-lg" />
+                <div className="relative h-4 bg-gray-200 rounded-full">
+                  <div
+                    className="absolute h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full"
+                    style={{
+                      left: `${gradientLeft}%`,
+                      width: `${gradientWidth}%`,
+                    }}
+                  />
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-white border border-green-800 rounded-full z-10"
+                    style={{ left: `${medianPercent}%`, marginLeft: '-4px' }}
+                  />
+                </div>
                 <div
-                  className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-gray-400 border-2 border-white rounded-full shadow"
-                  style={{ left: `calc(${medianPercent}% - 8px)` }}
+                  className="absolute top-0 w-4 h-4 bg-gray-400 border-2 border-white rounded-full shadow"
+                  style={{
+                    left: `calc(${medianPercent}% - 8px)`,
+                    top: '-2px',
+                  }}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="absolute inset-0 bg-white/60 rounded-lg" />
@@ -234,6 +340,25 @@ export default function PriceSpeedSlider({ result, isPro, embedded = false }: Pr
               <span>${sliderMax}</span>
             </div>
           </div>
+
+          {/* Manual price input (Pro only) */}
+          {isPro && (
+            <div className="mt-3 flex items-center gap-2">
+              <label className="text-xs text-gray-500">Or enter price:</label>
+              <div className="relative w-24">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">$</span>
+                <input
+                  type="number"
+                  min={sliderMin}
+                  max={sliderMax}
+                  step={1}
+                  value={price}
+                  onChange={(e) => handlePriceInput(e.target.value)}
+                  className="w-full pl-5 pr-2 py-1.5 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

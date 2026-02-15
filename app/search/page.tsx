@@ -1,7 +1,7 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import SearchBar from '@/components/SearchBar';
 import SearchResults from '@/components/SearchResults';
 import CompCheck from '@/components/CompCheck';
@@ -11,11 +11,12 @@ import CompCheckTeaser from '@/components/CompCheckTeaser';
 import TrendingSearches from '@/components/TrendingSearches';
 import SaveSearchButton from '@/components/SaveSearchButton';
 import { createClient } from '@/lib/supabase/client';
-import type { SellThroughResult } from '@/lib/sellthrough';
+import { calculateSellThrough, getVerdict, median, type SellThroughResult } from '@/lib/sellthrough';
 import type { ConditionValue } from '@/components/ConditionFilter';
 
 function SearchContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const query = searchParams.get('q') || '';
   const [result, setResult] = useState<SellThroughResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -26,6 +27,7 @@ function SearchContent() {
   const [condition, setCondition] = useState<ConditionValue>('');
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [authPromptQuery, setAuthPromptQuery] = useState('');
+  const [excludedIndices, setExcludedIndices] = useState<Set<number>>(new Set());
   const prevQueryRef = useRef('');
 
   // Check user plan on mount
@@ -50,9 +52,10 @@ function SearchContent() {
 
   useEffect(() => {
     if (query) {
-      // Reset condition when query changes
+      // Reset condition and exclusions when query changes
       if (query !== prevQueryRef.current) {
         setCondition('');
+        setExcludedIndices(new Set());
         prevQueryRef.current = query;
       }
       runSearch(query, condition);
@@ -65,6 +68,47 @@ function SearchContent() {
     if (query) {
       runSearch(query, newCondition);
     }
+  };
+
+  // Recalculate result when listings are excluded
+  const adjustedResult = useMemo(() => {
+    if (!result || excludedIndices.size === 0) return result;
+    const listings = result.topListings || [];
+    const includedPrices = listings
+      .filter((_, i) => !excludedIndices.has(i))
+      .map(l => l.price);
+    if (includedPrices.length === 0) return result;
+
+    // Recalculate active count (subtract excluded listings)
+    const adjustedActiveCount = Math.max(0, result.activeCount - excludedIndices.size);
+    const adjustedSTR = calculateSellThrough(result.soldCount90d, adjustedActiveCount);
+
+    return {
+      ...result,
+      activeCount: adjustedActiveCount,
+      sellThroughRate: adjustedSTR,
+      verdict: getVerdict(adjustedSTR),
+      avgSoldPrice: Math.round(includedPrices.reduce((a, b) => a + b, 0) / includedPrices.length * 100) / 100,
+      medianSoldPrice: Math.round(median(includedPrices) * 100) / 100,
+      priceLow: Math.min(...includedPrices),
+      priceHigh: Math.max(...includedPrices),
+    };
+  }, [result, excludedIndices]);
+
+  const handleToggleExclude = (index: number) => {
+    setExcludedIndices(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
+  const handleSearchTitle = (title: string) => {
+    router.push(`/search?q=${encodeURIComponent(title)}`);
   };
 
   const runSearch = async (q: string, cond: ConditionValue = condition) => {
@@ -92,6 +136,7 @@ function SearchContent() {
       }
 
       setResult(data.result);
+      setExcludedIndices(new Set());
       setRemaining(data.remainingSearches ?? null);
     } catch (err) {
       setError('Failed to connect. Please try again.');
@@ -99,6 +144,9 @@ function SearchContent() {
       setLoading(false);
     }
   };
+
+  // Use adjusted result (accounts for excluded comps) for all display components
+  const displayResult = adjustedResult;
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
@@ -189,32 +237,57 @@ function SearchContent() {
       )}
 
       {/* Results */}
-      {result && !loading && (
+      {displayResult && !loading && (
         <div className="animate-fade-in">
           {/* Unified results card — includes condition filter, slider, deal calc */}
           <SearchResults
-            result={result}
+            result={displayResult}
             isPro={isPro}
             condition={condition}
             onConditionChange={handleConditionChange}
           />
 
+          {/* Exclusion indicator */}
+          {excludedIndices.size > 0 && (
+            <div className="flex items-center justify-between mt-2 px-1">
+              <span className="text-xs text-amber-600">
+                {excludedIndices.size} listing{excludedIndices.size !== 1 ? 's' : ''} excluded — stats adjusted
+              </span>
+              <button
+                onClick={() => setExcludedIndices(new Set())}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+
           {/* Action bar — Save Search button */}
           <div className="flex items-center justify-end mt-3 mb-2">
-            <SaveSearchButton result={result} isPro={isPro} isLoggedIn={isLoggedIn} />
+            <SaveSearchButton result={displayResult} isPro={isPro} isLoggedIn={isLoggedIn} />
           </div>
 
           {/* Pro-only separate cards */}
           {isPro && (
             <>
-              <CompCheck listings={result.topListings || []} query={result.query} />
-              <SourcingCalc result={result} />
+              <CompCheck
+                listings={result?.topListings || []}
+                query={displayResult.query}
+                excludedIndices={excludedIndices}
+                onToggleExclude={handleToggleExclude}
+                onSearchTitle={handleSearchTitle}
+              />
+              <SourcingCalc result={displayResult} />
             </>
           )}
 
           {/* Free users: competitor teaser (1 visible, rest blurred) */}
-          {!isPro && result.topListings && result.topListings.length > 0 && (
-            <CompCheckTeaser listings={result.topListings} query={result.query} />
+          {!isPro && result?.topListings && result.topListings.length > 0 && (
+            <CompCheckTeaser
+              listings={result.topListings}
+              query={displayResult.query}
+              onSearchTitle={handleSearchTitle}
+            />
           )}
 
           {/* Pro feature showcase catalog for free users */}

@@ -47,8 +47,8 @@ function extractPrices(items: EbayItemSummary[]): number[] {
     .filter(price => !isNaN(price) && price > 0);
 }
 
-// Extract top listings for Comp Check (6 diverse listings)
-function extractTopListings(items: EbayItemSummary[], count = 6): TopListing[] {
+// Extract top listings for Comp Check (24 diverse listings)
+function extractTopListings(items: EbayItemSummary[], count = 24): TopListing[] {
   const withImages = items.filter(item => item.image?.imageUrl);
   const sorted = [...withImages].sort((a, b) =>
     parseFloat(a.price.value) - parseFloat(b.price.value)
@@ -74,6 +74,7 @@ function mapToTopListing(item: EbayItemSummary): TopListing {
     imageUrl: item.image?.imageUrl,
     condition: item.condition || 'Not specified',
     itemUrl: item.itemWebUrl,
+    itemId: item.itemId,
     seller: item.seller?.username,
   };
 }

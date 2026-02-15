@@ -53,7 +53,7 @@ CREATE TABLE public.searches (
   price_low DECIMAL,             -- lowest sold price
   price_high DECIMAL,            -- highest sold price
   avg_days_to_sell INTEGER,      -- average time to sell
-  verdict TEXT CHECK (verdict IN ('BUY', 'RISKY', 'PASS')),
+  verdict TEXT CHECK (verdict IN ('PASS', 'MAYBE', 'BUY', 'STRONG_BUY', 'S_TIER')),
 
   -- Metadata
   platform TEXT NOT NULL DEFAULT 'ebay',
@@ -225,8 +225,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION public.calc_verdict(sell_through DECIMAL)
 RETURNS TEXT AS $$
 BEGIN
-  IF sell_through >= 50 THEN RETURN 'BUY';
-  ELSIF sell_through >= 20 THEN RETURN 'RISKY';
+  IF sell_through >= 100 THEN RETURN 'S_TIER';
+  ELSIF sell_through >= 75 THEN RETURN 'STRONG_BUY';
+  ELSIF sell_through >= 50 THEN RETURN 'BUY';
+  ELSIF sell_through >= 25 THEN RETURN 'MAYBE';
   ELSE RETURN 'PASS';
   END IF;
 END;

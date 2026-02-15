@@ -251,9 +251,11 @@ export default function SavedPage() {
                       </Link>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+                          search.verdict === 'S_TIER' ? 'bg-purple-100 text-purple-700' :
+                          search.verdict === 'STRONG_BUY' ? 'bg-green-100 text-green-800' :
                           search.verdict === 'BUY' ? 'bg-green-100 text-green-700' :
                           search.verdict === 'MAYBE' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-                        }`}>{search.verdict}</span>
+                        }`}>{search.verdict === 'STRONG_BUY' ? 'STRONG BUY' : search.verdict === 'S_TIER' ? 'S-TIER' : search.verdict}</span>
                         <span className="text-xs text-gray-400">{search.sell_through_rate}% STR</span>
                         <span className="text-xs text-gray-400">·</span>
                         <span className="text-xs text-gray-400">

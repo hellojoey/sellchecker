@@ -133,7 +133,7 @@ function SavedSearchesMockup() {
   const searches = [
     { query: 'Lululemon Define Jacket', verdict: 'BUY', rate: '68%', cog: '$5.00', profit: '+$29.88', verdictColor: 'text-green-600' },
     { query: 'Nike Dunk Low Panda', verdict: 'MAYBE', rate: '34%', cog: '$45.00', profit: '+$22.50', verdictColor: 'text-yellow-600' },
-    { query: 'Vintage Pyrex Mixing Bowl', verdict: 'BUY', rate: '72%', cog: '$3.00', profit: '+$18.40', verdictColor: 'text-green-600' },
+    { query: 'Vintage Pyrex Mixing Bowl', verdict: 'STRONG BUY', rate: '82%', cog: '$3.00', profit: '+$18.40', verdictColor: 'text-green-700' },
   ];
 
   return (

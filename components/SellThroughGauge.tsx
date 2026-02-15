@@ -12,23 +12,26 @@ export default function SellThroughGauge({ rate, verdict, size = 200 }: GaugePro
   const color = getVerdictColor(verdict);
   const radius = 80;
   const circumference = Math.PI * radius;
-  const progress = (rate / 100) * circumference;
+  const clampedRate = Math.min(rate, 100);
+  const progress = (clampedRate / 100) * circumference;
   const center = size / 2;
 
   // Zone boundaries as fractions of the semicircle
-  const passEnd = 0.20; // 0-20% = PASS zone
-  const maybeEnd = 0.50; // 20-50% = MAYBE zone
-  // 50-100% = BUY zone
+  const passEnd = 0.25;     // 0-25% = PASS zone
+  const maybeEnd = 0.50;    // 25-50% = MAYBE zone
+  const buyEnd = 0.75;      // 50-75% = BUY zone
+  // 75-100% = STRONG BUY zone
 
   const passArc = passEnd * circumference;
   const maybeArc = (maybeEnd - passEnd) * circumference;
-  const buyArc = (1 - maybeEnd) * circumference;
+  const buyArc = (buyEnd - maybeEnd) * circumference;
+  const strongBuyArc = (1 - buyEnd) * circumference;
 
   return (
     <div className="flex flex-col items-center">
       <svg width={size} height={size / 2 + 20} viewBox={`0 0 ${size} ${size / 2 + 20}`}>
         {/* Zone background arcs */}
-        {/* PASS zone: 0-20% (light red) */}
+        {/* PASS zone: 0-25% (light red) */}
         <path
           d={`M ${center - radius} ${center} A ${radius} ${radius} 0 0 1 ${center + radius} ${center}`}
           fill="none"
@@ -36,7 +39,7 @@ export default function SellThroughGauge({ rate, verdict, size = 200 }: GaugePro
           strokeWidth="16"
           strokeDasharray={`${passArc} ${circumference}`}
         />
-        {/* MAYBE zone: 20-50% (light yellow) */}
+        {/* MAYBE zone: 25-50% (light yellow) */}
         <path
           d={`M ${center - radius} ${center} A ${radius} ${radius} 0 0 1 ${center + radius} ${center}`}
           fill="none"
@@ -44,13 +47,21 @@ export default function SellThroughGauge({ rate, verdict, size = 200 }: GaugePro
           strokeWidth="16"
           strokeDasharray={`0 ${passArc} ${maybeArc} ${circumference}`}
         />
-        {/* BUY zone: 50-100% (light green) */}
+        {/* BUY zone: 50-75% (light green) */}
         <path
           d={`M ${center - radius} ${center} A ${radius} ${radius} 0 0 1 ${center + radius} ${center}`}
           fill="none"
           stroke="#dcfce7"
           strokeWidth="16"
           strokeDasharray={`0 ${passArc + maybeArc} ${buyArc} ${circumference}`}
+        />
+        {/* STRONG BUY zone: 75-100% (brighter green) */}
+        <path
+          d={`M ${center - radius} ${center} A ${radius} ${radius} 0 0 1 ${center + radius} ${center}`}
+          fill="none"
+          stroke="#bbf7d0"
+          strokeWidth="16"
+          strokeDasharray={`0 ${passArc + maybeArc + buyArc} ${strongBuyArc} ${circumference}`}
         />
         {/* Progress arc (bold color overlay) */}
         <path
@@ -62,7 +73,7 @@ export default function SellThroughGauge({ rate, verdict, size = 200 }: GaugePro
           strokeDasharray={`${progress} ${circumference}`}
           className="transition-all duration-1000 ease-out"
         />
-        {/* Rate text */}
+        {/* Rate text — shows actual rate even if > 100% */}
         <text
           x={center}
           y={center - 10}

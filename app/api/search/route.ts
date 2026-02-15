@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { searchEbay } from '@/lib/ebay/browse';
 import { hashQuery, normalizeQuery, getCachedResult, setCachedResult } from '@/lib/cache';
 import { createServerSupabase, createServiceClient } from '@/lib/supabase/server';
+import { getVerdict } from '@/lib/sellthrough';
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get('q');
@@ -180,7 +181,7 @@ function generateDemoResult(query: string) {
   }
 
   const sellThroughRate = Math.round((sold / (sold + active)) * 1000) / 10;
-  const verdict = sellThroughRate >= 50 ? 'BUY' : sellThroughRate >= 20 ? 'MAYBE' : 'PASS';
+  const verdict = getVerdict(sellThroughRate);
 
   return {
     query,

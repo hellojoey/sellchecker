@@ -109,37 +109,10 @@ export default function SearchResults({
           );
         })()}
 
-        {/* Price Range */}
-        <div className="mt-6 bg-gray-50 rounded-xl p-4">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Price Range</p>
-          <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="absolute h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full"
-              style={{
-                left: `${(result.priceLow / result.priceHigh) * 30}%`,
-                width: `${70 - (result.priceLow / result.priceHigh) * 30}%`,
-              }}
-            />
-            {/* Median marker */}
-            <div
-              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-green-600 rounded-full shadow"
-              style={{ left: `${(result.medianSoldPrice / result.priceHigh) * 100}%` }}
-            />
-          </div>
-          <div className="flex justify-between mt-2 text-sm">
-            <span className="text-gray-500">${result.priceLow.toFixed(0)}</span>
-            <span className="font-medium text-green-700">
-              Median: ${result.medianSoldPrice.toFixed(2)}
-            </span>
-            <span className="text-gray-500">${result.priceHigh.toFixed(0)}</span>
-          </div>
+        {/* Price vs. Speed Slider (merged with price range bar) — embedded in card */}
+        <div className="mt-6">
+          <PriceSpeedSlider result={result} isPro={isPro} embedded />
         </div>
-
-        {/* ── Divider ── */}
-        <hr className="border-gray-100 my-6" />
-
-        {/* Price vs. Speed Slider — embedded in card */}
-        <PriceSpeedSlider result={result} isPro={isPro} embedded />
 
         {/* ── Divider ── */}
         <hr className="border-gray-100 my-6" />

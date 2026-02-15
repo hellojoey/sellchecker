@@ -6,6 +6,22 @@ interface VerdictBadgeProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
+const verdictEmoji: Record<Verdict, string> = {
+  S_TIER: '🏆 ',
+  STRONG_BUY: '🔥 ',
+  BUY: '💰 ',
+  MAYBE: '🤷 ',
+  PASS: '👎 ',
+};
+
+const verdictDisplayName: Record<Verdict, string> = {
+  S_TIER: 'S-TIER',
+  STRONG_BUY: 'STRONG BUY',
+  BUY: 'BUY',
+  MAYBE: 'MAYBE',
+  PASS: 'PASS',
+};
+
 export default function VerdictBadge({ verdict, showLabel = false, size = 'md' }: VerdictBadgeProps) {
   const color = getVerdictColor(verdict);
 
@@ -21,10 +37,8 @@ export default function VerdictBadge({ verdict, showLabel = false, size = 'md' }
         className={`inline-flex items-center font-bold rounded-full text-white ${sizeClasses[size]}`}
         style={{ backgroundColor: color }}
       >
-        {verdict === 'BUY' && '💰 '}
-        {verdict === 'MAYBE' && '🤷 '}
-        {verdict === 'PASS' && '👎 '}
-        {verdict}
+        {verdictEmoji[verdict]}
+        {verdictDisplayName[verdict]}
       </span>
       {showLabel && (
         <span className="text-sm text-gray-500">{getVerdictLabel(verdict)}</span>

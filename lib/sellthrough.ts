@@ -2,7 +2,7 @@
 // SellChecker Core Engine — Sell-Through Calculator
 // ═══════════════════════════════════════════════
 
-export type Verdict = 'BUY' | 'MAYBE' | 'PASS';
+export type Verdict = 'PASS' | 'MAYBE' | 'BUY' | 'STRONG_BUY' | 'S_TIER';
 
 export interface TopListing {
   title: string;
@@ -10,6 +10,7 @@ export interface TopListing {
   imageUrl?: string;
   condition: string;
   itemUrl: string;
+  itemId?: string;
   seller?: string;
 }
 
@@ -37,13 +38,17 @@ export function calculateSellThrough(sold: number, active: number): number {
 }
 
 export function getVerdict(rate: number): Verdict {
+  if (rate >= 100) return 'S_TIER';
+  if (rate >= 75) return 'STRONG_BUY';
   if (rate >= 50) return 'BUY';
-  if (rate >= 20) return 'MAYBE';
+  if (rate >= 25) return 'MAYBE';
   return 'PASS';
 }
 
 export function getVerdictColor(verdict: Verdict): string {
   switch (verdict) {
+    case 'S_TIER': return '#7c3aed';
+    case 'STRONG_BUY': return '#16a34a';
     case 'BUY': return '#22c55e';
     case 'MAYBE': return '#eab308';
     case 'PASS': return '#dc2626';
@@ -52,7 +57,9 @@ export function getVerdictColor(verdict: Verdict): string {
 
 export function getVerdictLabel(verdict: Verdict): string {
   switch (verdict) {
-    case 'BUY': return 'Strong demand — BUY';
+    case 'S_TIER': return 'S-Tier demand — sell it yesterday';
+    case 'STRONG_BUY': return 'Strong demand — BUY confidently';
+    case 'BUY': return 'Good demand — BUY';
     case 'MAYBE': return 'Maybe — price carefully';
     case 'PASS': return 'Low demand — skip it';
   }

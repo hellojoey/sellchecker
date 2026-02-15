@@ -111,9 +111,11 @@ export default function SaveSearchButton({ result, isPro, isLoggedIn }: SaveSear
               <p className="text-sm font-semibold text-gray-900 mb-1">{result.query}</p>
               <div className="flex items-center gap-3 text-xs text-gray-500">
                 <span className={`font-bold ${
+                  result.verdict === 'S_TIER' ? 'text-purple-600' :
+                  result.verdict === 'STRONG_BUY' ? 'text-green-700' :
                   result.verdict === 'BUY' ? 'text-green-600' :
                   result.verdict === 'MAYBE' ? 'text-yellow-600' : 'text-red-600'
-                }`}>{result.verdict}</span>
+                }`}>{result.verdict === 'STRONG_BUY' ? 'STRONG BUY' : result.verdict === 'S_TIER' ? 'S-TIER' : result.verdict}</span>
                 <span>{result.sellThroughRate}% sell-through</span>
                 <span>Avg ${result.avgSoldPrice.toFixed(2)}</span>
               </div>
