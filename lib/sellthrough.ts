@@ -93,3 +93,17 @@ export function estimateDaysToSell(
 
   return Math.max(1, Math.min(60, Math.round(baseDays * multiplier)));
 }
+
+// Returns a range of estimated days (at 70% and 140% of median) for display
+export function estimateDaysToSellRange(
+  medianPrice: number,
+  sellThroughRate: number
+): { low: number; high: number } {
+  const atMedian = estimateDaysToSell(medianPrice, medianPrice, sellThroughRate);
+  const atLow = estimateDaysToSell(medianPrice * 0.7, medianPrice, sellThroughRate);
+  const atHigh = estimateDaysToSell(medianPrice * 1.4, medianPrice, sellThroughRate);
+  return {
+    low: Math.min(atMedian, atLow),
+    high: Math.max(atMedian, atHigh),
+  };
+}

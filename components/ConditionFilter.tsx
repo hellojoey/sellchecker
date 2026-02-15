@@ -18,6 +18,9 @@ export default function ConditionFilter({ value, onChange, disabled = false }: C
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs font-medium text-gray-500">Condition:</span>
+      {disabled && (
+        <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded">PRO</span>
+      )}
       <div className="flex gap-1">
         {OPTIONS.map((opt) => {
           const isActive = value === opt.value;

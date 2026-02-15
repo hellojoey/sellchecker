@@ -1,6 +1,7 @@
 'use client';
 
 import type { SellThroughResult } from '@/lib/sellthrough';
+import { estimateDaysToSellRange } from '@/lib/sellthrough';
 import SellThroughGauge from './SellThroughGauge';
 import VerdictBadge from './VerdictBadge';
 import SmartInsights from './SmartInsights';
@@ -77,28 +78,36 @@ export default function SearchResults({
         <SmartInsights result={result} isPro={isPro} />
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-          <StatBox
-            label="Sold (90d)"
-            value={result.soldCount90d.toLocaleString()}
-            icon="📦"
-          />
-          <StatBox
-            label="Active"
-            value={result.activeCount.toLocaleString()}
-            icon="🏷️"
-          />
-          <StatBox
-            label="Avg Price"
-            value={`$${result.avgSoldPrice.toFixed(2)}`}
-            icon="💰"
-          />
-          <StatBox
-            label="Avg Days to Sell"
-            value={`~${result.avgDaysToSell}d`}
-            icon="⏱️"
-          />
-        </div>
+        {(() => {
+          const daysRange = estimateDaysToSellRange(result.medianSoldPrice, result.sellThroughRate);
+          const daysDisplay = daysRange.low === daysRange.high
+            ? `~${daysRange.low}d`
+            : `${daysRange.low}-${daysRange.high}d`;
+          return (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+              <StatBox
+                label="Sold (90d)"
+                value={result.soldCount90d.toLocaleString()}
+                icon="📦"
+              />
+              <StatBox
+                label="Active"
+                value={result.activeCount.toLocaleString()}
+                icon="🏷️"
+              />
+              <StatBox
+                label="Avg Price"
+                value={`$${result.avgSoldPrice.toFixed(2)}`}
+                icon="💰"
+              />
+              <StatBox
+                label="Days to Sell"
+                value={daysDisplay}
+                icon="⏱️"
+              />
+            </div>
+          );
+        })()}
 
         {/* Price Range */}
         <div className="mt-6 bg-gray-50 rounded-xl p-4">

@@ -22,14 +22,24 @@ export default function CompCheck({ listings, query }: CompCheckProps) {
             {listings.length} active listings on eBay right now
           </p>
         </div>
-        <a
-          href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_sop=12`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-green-600 hover:text-green-700 font-medium"
-        >
-          View all on eBay →
-        </a>
+        <div className="flex items-center gap-3">
+          <a
+            href={`https://www.ebay.com/sl/list?keyword=${encodeURIComponent(query)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+          >
+            Sell Similar &rarr;
+          </a>
+          <a
+            href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_sop=12`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-green-600 hover:text-green-700 font-medium"
+          >
+            View all on eBay &rarr;
+          </a>
+        </div>
       </div>
 
       {/* Listings grid */}

@@ -21,9 +21,9 @@ export default function VerdictBadge({ verdict, showLabel = false, size = 'md' }
         className={`inline-flex items-center font-bold rounded-full text-white ${sizeClasses[size]}`}
         style={{ backgroundColor: color }}
       >
-        {verdict === 'BUY' && '✓ '}
-        {verdict === 'MAYBE' && '? '}
-        {verdict === 'PASS' && '✗ '}
+        {verdict === 'BUY' && '💰 '}
+        {verdict === 'MAYBE' && '🤷 '}
+        {verdict === 'PASS' && '👎 '}
         {verdict}
       </span>
       {showLabel && (

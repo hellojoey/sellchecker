@@ -9,6 +9,7 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const plan = searchParams.get('plan');
+  const redirect = searchParams.get('redirect');
   const authError = searchParams.get('error');
 
   const [mode, setMode] = useState<'login' | 'signup'>(plan === 'pro' ? 'signup' : 'login');
@@ -48,7 +49,9 @@ function LoginContent() {
             data: {
               first_name: firstName,
             },
-            emailRedirectTo: `${window.location.origin}/api/auth/callback${plan === 'pro' ? '?next=/pricing?plan=pro' : '?next=/search'}`,
+            emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(
+              plan === 'pro' ? '/pricing?plan=pro' : (redirect || '/search')
+            )}`,
           },
         });
 
@@ -82,7 +85,7 @@ function LoginContent() {
             return;
           }
         }
-        router.push('/search');
+        router.push(redirect || '/search');
       }
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');

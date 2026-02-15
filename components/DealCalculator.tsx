@@ -40,7 +40,7 @@ export default function DealCalculator({ result, isPro = false, embedded = false
     const content = (
       <>
         {/* Section header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-1">
           <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
             <span>💰</span> Deal Calculator
             <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded">PRO</span>
@@ -49,6 +49,9 @@ export default function DealCalculator({ result, isPro = false, embedded = false
             Upgrade to unlock
           </a>
         </div>
+        <p className="text-xs text-gray-500 mb-4">
+          Enter what you paid and see your real profit after eBay fees and shipping
+        </p>
 
         {/* Greyed-out content */}
         <div className="space-y-4">

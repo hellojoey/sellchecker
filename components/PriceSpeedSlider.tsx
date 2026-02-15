@@ -53,7 +53,7 @@ export default function PriceSpeedSlider({ result, isPro, embedded = false }: Pr
           <span>📊</span> Price vs. Speed
           {!isPro && (
             <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded">
-              PRO unlocks slider
+              PRO
             </span>
           )}
         </h3>
@@ -61,7 +61,7 @@ export default function PriceSpeedSlider({ result, isPro, embedded = false }: Pr
       <p className="text-xs text-gray-500 mb-4">
         {isPro
           ? 'Drag the slider — see how price affects speed of sale'
-          : 'See estimated time to sell at the median price'}
+          : 'Adjust your listing price to see how fast it\u2019ll sell'}
       </p>
 
       {/* Big price + days display */}
@@ -110,11 +110,13 @@ export default function PriceSpeedSlider({ result, isPro, embedded = false }: Pr
           /* Locked slider for free users */
           <div className="relative">
             <div className="w-full h-2 bg-gray-200 rounded-lg" />
-            {/* Fixed dot at median */}
+            {/* Slider handle at median — looks like a real slider control */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-gray-400 border-2 border-white rounded-full shadow"
-              style={{ left: `calc(${medianPercent}% - 8px)` }}
-            />
+              className="absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-300 border-2 border-white rounded-full shadow-md flex items-center justify-center"
+              style={{ left: `calc(${medianPercent}% - 12px)` }}
+            >
+              <span className="text-[8px] text-gray-500 leading-none">&#x27F7;</span>
+            </div>
             {/* Lock overlay */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="absolute inset-0 bg-white/60 rounded-lg" />
@@ -151,14 +153,14 @@ export default function PriceSpeedSlider({ result, isPro, embedded = false }: Pr
             <span>📊</span> Price vs. Speed
             {!isPro && (
               <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded">
-                PRO unlocks slider
+                PRO
               </span>
             )}
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
             {isPro
               ? 'Drag the slider — see how price affects speed of sale'
-              : 'See estimated time to sell at the median price'}
+              : 'Adjust your listing price to see how fast it\u2019ll sell'}
           </p>
         </div>
 

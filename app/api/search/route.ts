@@ -26,9 +26,26 @@ export async function GET(request: NextRequest) {
   const queryHash = hashQuery(query, condition || undefined);
 
   try {
+    // 1. Require authentication — no anonymous searches
+    let user: any = null;
+    try {
+      const authSupabase = createServerSupabase();
+      const { data } = await authSupabase.auth.getUser();
+      user = data?.user;
+    } catch {
+      // Auth check failed
+    }
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Please log in to search. Create a free account for 5 searches per day!', requireLogin: true },
+        { status: 401 }
+      );
+    }
+
     const supabase = createServiceClient();
 
-    // 1. Check cache first — cache hits are free for everyone
+    // 2. Check cache — cache hits are free for authenticated users
     const cached = await getCachedResult(supabase, queryHash);
     if (cached) {
       return NextResponse.json({
@@ -53,26 +70,15 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 2. Cache miss — check auth + rate limit before calling eBay API
-    let user: any = null;
-    try {
-      const authSupabase = createServerSupabase();
-      const { data } = await authSupabase.auth.getUser();
-      user = data?.user;
-    } catch {
-      // Auth check failed — proceed as anonymous
-    }
+    // 3. Cache miss — check rate limit before calling eBay API
+    const { data: allowed, error: limitError } = await supabase
+      .rpc('check_search_limit', { p_user_id: user.id });
 
-    if (user) {
-      const { data: allowed, error: limitError } = await supabase
-        .rpc('check_search_limit', { p_user_id: user.id });
-
-      if (!limitError && allowed === false) {
-        return NextResponse.json(
-          { error: 'Daily search limit reached. Upgrade to Pro for unlimited SellChecks!' },
-          { status: 429 }
-        );
-      }
+    if (!limitError && allowed === false) {
+      return NextResponse.json(
+        { error: 'Daily search limit reached. Upgrade to Pro for unlimited SellChecks!' },
+        { status: 429 }
+      );
     }
 
     // 3. Call eBay API (Browse API + scraper in parallel)
@@ -86,15 +92,13 @@ export async function GET(request: NextRequest) {
 
     // 6. Get remaining searches for free users
     let remainingSearches: number | null = null;
-    if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('plan, searches_today')
-        .eq('id', user.id)
-        .single();
-      if (profile?.plan === 'free') {
-        remainingSearches = Math.max(0, 5 - (profile.searches_today || 0));
-      }
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan, searches_today')
+      .eq('id', user.id)
+      .single();
+    if (profile?.plan === 'free') {
+      remainingSearches = Math.max(0, 5 - (profile.searches_today || 0));
     }
 
     return NextResponse.json({

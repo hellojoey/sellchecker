@@ -7,6 +7,7 @@ import SearchResults from '@/components/SearchResults';
 import CompCheck from '@/components/CompCheck';
 import SourcingCalc from '@/components/SourcingCalc';
 import ProFeatureCatalog from '@/components/ProFeatureCatalog';
+import CompCheckTeaser from '@/components/CompCheckTeaser';
 import TrendingSearches from '@/components/TrendingSearches';
 import SaveSearchButton from '@/components/SaveSearchButton';
 import { createClient } from '@/lib/supabase/client';
@@ -75,6 +76,12 @@ function SearchContent() {
       }
       const res = await fetch(url);
       const data = await res.json();
+
+      // Require login — redirect to auth
+      if (res.status === 401 && data.requireLogin) {
+        window.location.href = `/login?redirect=/search?q=${encodeURIComponent(q)}`;
+        return;
+      }
 
       if (!res.ok) {
         setError(data.error || 'Something went wrong');
@@ -162,12 +169,17 @@ function SearchContent() {
             <SaveSearchButton result={result} isPro={isPro} isLoggedIn={isLoggedIn} />
           </div>
 
-          {/* Pro-only separate cards — completely hidden for free users */}
+          {/* Pro-only separate cards */}
           {isPro && (
             <>
               <CompCheck listings={result.topListings || []} query={result.query} />
               <SourcingCalc result={result} />
             </>
+          )}
+
+          {/* Free users: competitor teaser (1 visible, rest blurred) */}
+          {!isPro && result.topListings && result.topListings.length > 0 && (
+            <CompCheckTeaser listings={result.topListings} query={result.query} />
           )}
 
           {/* Pro feature showcase catalog for free users */}
