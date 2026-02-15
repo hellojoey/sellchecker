@@ -252,7 +252,7 @@ export default function SavedPage() {
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
                           search.verdict === 'BUY' ? 'bg-green-100 text-green-700' :
-                          search.verdict === 'RISKY' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                          search.verdict === 'MAYBE' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
                         }`}>{search.verdict}</span>
                         <span className="text-xs text-gray-400">{search.sell_through_rate}% STR</span>
                         <span className="text-xs text-gray-400">·</span>

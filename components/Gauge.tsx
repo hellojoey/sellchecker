@@ -12,11 +12,11 @@ export function Gauge({ rate, size = 120 }: GaugeProps) {
   const strokeDasharray = (angle / 180) * circumference;
 
   // Color based on verdict
-  let color = "#ef4444"; // PASS - red
+  let color = "#dc2626"; // PASS - red
   if (rate >= 50) {
     color = "#10b981"; // BUY - green
   } else if (rate >= 20) {
-    color = "#f59e0b"; // RISKY - amber
+    color = "#eab308"; // MAYBE - yellow
   }
 
   return (

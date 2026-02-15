@@ -5,9 +5,10 @@ export function normalizeQuery(query: string): string {
   return query.toLowerCase().trim().replace(/\s+/g, ' ');
 }
 
-export function hashQuery(query: string): string {
+export function hashQuery(query: string, condition?: string): string {
   const normalized = normalizeQuery(query);
-  return crypto.createHash('md5').update(normalized).digest('hex');
+  const key = condition ? `${normalized}::${condition}` : normalized;
+  return crypto.createHash('md5').update(key).digest('hex');
 }
 
 // Check cache in Supabase (called from API route)

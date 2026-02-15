@@ -6,19 +6,19 @@ import { createClient } from '@/lib/supabase/client';
 
 const FREE_FEATURES = [
   '5 SellChecks per day',
-  'Sell-through rate + BUY/RISKY/PASS verdict',
-  'Price range and average pricing',
-  'Comp Check — see competing eBay listings',
-  'Sourcing Calculator — know your max buy price',
-  'Mobile-friendly for on-the-go sourcing',
+  'Sell-through rate + BUY/MAYBE/PASS verdict',
+  'New/Used condition filter',
+  'Deal Calculator — COG, shipping, and profit breakdown',
+  'Price-to-Speed preview (locked at median)',
+  'Comp Check + Sourcing Calculator',
 ];
 
 const PRO_FEATURES = [
   'Unlimited SellChecks — never run out at the thrift store',
-  'Saved Searches — save items with your cost of goods for later',
-  'Interactive pricing slider — see what price sells fastest',
-  'Profit calculator — enter your COG, see net profit after eBay fees',
-  'Shipping cost estimator by package weight',
+  'Smart Insights — contextual tips per search',
+  'Interactive Price-to-Speed slider',
+  'Saved Searches with COG tracking',
+  'Profile & default settings',
   'Everything in Free, plus priority support',
 ];
 

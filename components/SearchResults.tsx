@@ -3,13 +3,15 @@
 import type { SellThroughResult } from '@/lib/sellthrough';
 import SellThroughGauge from './SellThroughGauge';
 import VerdictBadge from './VerdictBadge';
+import SmartInsights from './SmartInsights';
 
 interface SearchResultsProps {
   result: SellThroughResult;
   loading?: boolean;
+  isPro?: boolean;
 }
 
-export default function SearchResults({ result, loading = false }: SearchResultsProps) {
+export default function SearchResults({ result, loading = false, isPro = false }: SearchResultsProps) {
   if (loading) {
     return (
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 animate-pulse">
@@ -43,15 +45,18 @@ export default function SearchResults({ result, loading = false }: SearchResults
 
       <div className="p-6">
         {/* Gauge + Verdict */}
-        <div className="flex flex-col items-center mb-6">
+        <div className="flex flex-col items-center mb-4">
           <SellThroughGauge rate={result.sellThroughRate} verdict={result.verdict} />
           <div className="mt-3">
             <VerdictBadge verdict={result.verdict} showLabel size="lg" />
           </div>
         </div>
 
+        {/* Smart Insights — inline below verdict */}
+        <SmartInsights result={result} isPro={isPro} />
+
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
           <StatBox
             label="Sold (90d)"
             value={result.soldCount90d.toLocaleString()}

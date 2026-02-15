@@ -15,18 +15,44 @@ export default function SellThroughGauge({ rate, verdict, size = 200 }: GaugePro
   const progress = (rate / 100) * circumference;
   const center = size / 2;
 
+  // Zone boundaries as fractions of the semicircle
+  const passEnd = 0.20; // 0-20% = PASS zone
+  const maybeEnd = 0.50; // 20-50% = MAYBE zone
+  // 50-100% = BUY zone
+
+  const passArc = passEnd * circumference;
+  const maybeArc = (maybeEnd - passEnd) * circumference;
+  const buyArc = (1 - maybeEnd) * circumference;
+
   return (
     <div className="flex flex-col items-center">
       <svg width={size} height={size / 2 + 20} viewBox={`0 0 ${size} ${size / 2 + 20}`}>
-        {/* Background arc */}
+        {/* Zone background arcs */}
+        {/* PASS zone: 0-20% (light red) */}
         <path
           d={`M ${center - radius} ${center} A ${radius} ${radius} 0 0 1 ${center + radius} ${center}`}
           fill="none"
-          stroke="#e5e7eb"
+          stroke="#fecaca"
           strokeWidth="16"
-          strokeLinecap="round"
+          strokeDasharray={`${passArc} ${circumference}`}
         />
-        {/* Progress arc */}
+        {/* MAYBE zone: 20-50% (light yellow) */}
+        <path
+          d={`M ${center - radius} ${center} A ${radius} ${radius} 0 0 1 ${center + radius} ${center}`}
+          fill="none"
+          stroke="#fef3c7"
+          strokeWidth="16"
+          strokeDasharray={`0 ${passArc} ${maybeArc} ${circumference}`}
+        />
+        {/* BUY zone: 50-100% (light green) */}
+        <path
+          d={`M ${center - radius} ${center} A ${radius} ${radius} 0 0 1 ${center + radius} ${center}`}
+          fill="none"
+          stroke="#dcfce7"
+          strokeWidth="16"
+          strokeDasharray={`0 ${passArc + maybeArc} ${buyArc} ${circumference}`}
+        />
+        {/* Progress arc (bold color overlay) */}
         <path
           d={`M ${center - radius} ${center} A ${radius} ${radius} 0 0 1 ${center + radius} ${center}`}
           fill="none"

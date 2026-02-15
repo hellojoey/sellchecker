@@ -2,7 +2,7 @@
 // SellChecker Core Engine — Sell-Through Calculator
 // ═══════════════════════════════════════════════
 
-export type Verdict = 'BUY' | 'RISKY' | 'PASS';
+export type Verdict = 'BUY' | 'MAYBE' | 'PASS';
 
 export interface TopListing {
   title: string;
@@ -38,22 +38,22 @@ export function calculateSellThrough(sold: number, active: number): number {
 
 export function getVerdict(rate: number): Verdict {
   if (rate >= 50) return 'BUY';
-  if (rate >= 20) return 'RISKY';
+  if (rate >= 20) return 'MAYBE';
   return 'PASS';
 }
 
 export function getVerdictColor(verdict: Verdict): string {
   switch (verdict) {
     case 'BUY': return '#22c55e';
-    case 'RISKY': return '#f59e0b';
-    case 'PASS': return '#ef4444';
+    case 'MAYBE': return '#eab308';
+    case 'PASS': return '#dc2626';
   }
 }
 
 export function getVerdictLabel(verdict: Verdict): string {
   switch (verdict) {
     case 'BUY': return 'Strong demand — BUY';
-    case 'RISKY': return 'Moderate demand — price carefully';
+    case 'MAYBE': return 'Maybe — price carefully';
     case 'PASS': return 'Low demand — skip it';
   }
 }
@@ -63,4 +63,33 @@ export function median(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+// Deterministic price-to-speed estimate (replaces random brackets)
+export function estimateDaysToSell(
+  price: number,
+  medianPrice: number,
+  sellThroughRate: number
+): number {
+  if (medianPrice <= 0) return 30;
+  const priceRatio = price / medianPrice;
+  const baseDays = Math.max(2, Math.round(30 - sellThroughRate * 0.4));
+
+  // Piecewise multiplier curve
+  let multiplier: number;
+  if (priceRatio <= 0.5) {
+    multiplier = 0.4; // Deep discount — very fast
+  } else if (priceRatio <= 0.8) {
+    multiplier = 0.4 + (priceRatio - 0.5) * 2; // 0.4 → 1.0
+  } else if (priceRatio <= 1.2) {
+    multiplier = 1.0; // Near median — baseline speed
+  } else if (priceRatio <= 1.5) {
+    multiplier = 1.0 + (priceRatio - 1.2) * 3.33; // 1.0 → 2.0
+  } else if (priceRatio <= 2.0) {
+    multiplier = 2.0 + (priceRatio - 1.5) * 4; // 2.0 → 4.0
+  } else {
+    multiplier = 4.0 + (priceRatio - 2.0) * 2; // Keeps climbing
+  }
+
+  return Math.max(1, Math.min(60, Math.round(baseDays * multiplier)));
 }

@@ -1,12 +1,15 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import SearchBar from '@/components/SearchBar';
 import SearchResults from '@/components/SearchResults';
-import ProTools from '@/components/ProTools';
 import CompCheck from '@/components/CompCheck';
 import SourcingCalc from '@/components/SourcingCalc';
+import PriceSpeedSlider from '@/components/PriceSpeedSlider';
+import DealCalculator from '@/components/DealCalculator';
+import ProTeaser from '@/components/ProTeaser';
+import ConditionFilter, { type ConditionValue } from '@/components/ConditionFilter';
 import TrendingSearches from '@/components/TrendingSearches';
 import SaveSearchButton from '@/components/SaveSearchButton';
 import { createClient } from '@/lib/supabase/client';
@@ -21,6 +24,8 @@ function SearchContent() {
   const [remaining, setRemaining] = useState<number | null>(null);
   const [isPro, setIsPro] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [condition, setCondition] = useState<ConditionValue>('');
+  const prevQueryRef = useRef('');
 
   // Check user plan on mount
   useEffect(() => {
@@ -44,16 +49,33 @@ function SearchContent() {
 
   useEffect(() => {
     if (query) {
-      runSearch(query);
+      // Reset condition when query changes
+      if (query !== prevQueryRef.current) {
+        setCondition('');
+        prevQueryRef.current = query;
+      }
+      runSearch(query, condition);
     }
   }, [query]);
 
-  const runSearch = async (q: string) => {
+  // Re-run search when condition changes (if there's already a query)
+  const handleConditionChange = (newCondition: ConditionValue) => {
+    setCondition(newCondition);
+    if (query) {
+      runSearch(query, newCondition);
+    }
+  };
+
+  const runSearch = async (q: string, cond: ConditionValue = condition) => {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      let url = `/api/search?q=${encodeURIComponent(q)}`;
+      if (cond) {
+        url += `&condition=${cond}`;
+      }
+      const res = await fetch(url);
       const data = await res.json();
 
       if (!res.ok) {
@@ -73,12 +95,27 @@ function SearchContent() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
       {/* Search bar at top */}
-      <div className="mb-8">
+      <div className="mb-4">
         <SearchBar initialQuery={query} autoFocus />
       </div>
 
-      {/* Remaining searches */}
-      {remaining !== null && (
+      {/* Condition filter — show when we have a query */}
+      {query && (
+        <div className="flex items-center justify-between mb-4">
+          <ConditionFilter value={condition} onChange={handleConditionChange} disabled={loading} />
+          {remaining !== null && (
+            <span className="text-xs text-gray-500">
+              {remaining} left today
+              {remaining <= 1 && (
+                <span className="text-green-600 font-medium"> · <a href="/pricing" className="underline">Pro</a></span>
+              )}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Remaining searches (when no query yet, shown centered) */}
+      {!query && remaining !== null && (
         <div className="text-center mb-4">
           <span className="text-sm text-gray-500">
             {remaining} SellCheck{remaining !== 1 ? 's' : ''} remaining today
@@ -117,21 +154,28 @@ function SearchContent() {
       {/* Results */}
       {result && !loading && (
         <div className="animate-fade-in">
-          <SearchResults result={result} />
+          {/* Main results card with Smart Insights inline */}
+          <SearchResults result={result} isPro={isPro} />
 
           {/* Action bar — Save Search button */}
           <div className="flex items-center justify-end mt-3 mb-2">
             <SaveSearchButton result={result} isPro={isPro} isLoggedIn={isLoggedIn} />
           </div>
 
-          {/* Comp Check — show competing eBay listings (free for everyone) */}
+          {/* Comp Check — free for everyone */}
           <CompCheck listings={result.topListings || []} query={result.query} />
+
+          {/* Price vs. Speed — locked preview (free) / interactive (Pro) */}
+          <PriceSpeedSlider result={result} isPro={isPro} />
+
+          {/* Deal Calculator — COG + shipping + profit (free for everyone) */}
+          <DealCalculator result={result} />
 
           {/* Sourcing Calculator — free for everyone */}
           <SourcingCalc result={result} />
 
-          {/* Pro Tools — pricing slider, profit calc, shipping (visible but locked for free) */}
-          <ProTools result={result} isPro={isPro} />
+          {/* Pro teaser for free users — marketing cards */}
+          {!isPro && <ProTeaser />}
 
           {/* Footer */}
           <div className="text-center mt-8">

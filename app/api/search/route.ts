@@ -1,5 +1,5 @@
 // /api/search — Core search endpoint
-// GET /api/search?q=Lululemon+Define+Jacket
+// GET /api/search?q=Lululemon+Define+Jacket&condition=NEW|USED
 import { NextRequest, NextResponse } from 'next/server';
 import { searchEbay } from '@/lib/ebay/browse';
 import { hashQuery, normalizeQuery, getCachedResult, setCachedResult } from '@/lib/cache';
@@ -7,6 +7,7 @@ import { createServerSupabase, createServiceClient } from '@/lib/supabase/server
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get('q');
+  const condition = request.nextUrl.searchParams.get('condition') || '';
 
   if (!query || query.trim().length === 0) {
     return NextResponse.json({ error: 'Query parameter "q" is required' }, { status: 400 });
@@ -16,8 +17,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Query must be at least 2 characters' }, { status: 400 });
   }
 
+  // Validate condition param
+  if (condition && !['NEW', 'USED'].includes(condition)) {
+    return NextResponse.json({ error: 'Condition must be NEW or USED' }, { status: 400 });
+  }
+
   const normalized = normalizeQuery(query);
-  const queryHash = hashQuery(query);
+  const queryHash = hashQuery(query, condition || undefined);
 
   try {
     const supabase = createServiceClient();
@@ -70,7 +76,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. Call eBay API (Browse API + scraper in parallel)
-    const result = await searchEbay(normalized);
+    const result = await searchEbay(normalized, condition || undefined);
 
     // 4. Cache the result
     await setCachedResult(supabase, queryHash, normalized, result);
@@ -170,7 +176,7 @@ function generateDemoResult(query: string) {
   }
 
   const sellThroughRate = Math.round((sold / (sold + active)) * 1000) / 10;
-  const verdict = sellThroughRate >= 50 ? 'BUY' : sellThroughRate >= 20 ? 'RISKY' : 'PASS';
+  const verdict = sellThroughRate >= 50 ? 'BUY' : sellThroughRate >= 20 ? 'MAYBE' : 'PASS';
 
   return {
     query,

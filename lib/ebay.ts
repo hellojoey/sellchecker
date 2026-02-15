@@ -166,15 +166,15 @@ export function calculateSellThrough(
 /**
  * Get verdict based on sell-through rate
  * @param sellThroughRate Percentage (0-100)
- * @returns "BUY" (strong demand), "RISKY" (moderate), or "PASS" (weak)
+ * @returns "BUY" (strong demand), "MAYBE" (moderate), or "PASS" (weak)
  */
 export function getVerdict(
   sellThroughRate: number
-): "BUY" | "RISKY" | "PASS" {
+): "BUY" | "MAYBE" | "PASS" {
   if (sellThroughRate >= 50) {
     return "BUY";
   } else if (sellThroughRate >= 20) {
-    return "RISKY";
+    return "MAYBE";
   } else {
     return "PASS";
   }
@@ -192,5 +192,5 @@ export interface SearchResult {
   priceLow: number;
   priceHigh: number;
   avgDaysToSell: number;
-  verdict: "BUY" | "RISKY" | "PASS";
+  verdict: "BUY" | "MAYBE" | "PASS";
 }

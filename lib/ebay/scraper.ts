@@ -23,13 +23,20 @@ function getRandomUserAgent(): string {
  * Scrape eBay's public sold listings page to get real sold count, prices, and dates.
  * Falls back gracefully — never throws.
  */
-export async function scrapeEbaySoldData(query: string): Promise<ScrapedSoldData> {
+export async function scrapeEbaySoldData(query: string, condition?: string): Promise<ScrapedSoldData> {
   const startTime = Date.now();
   const empty: ScrapedSoldData = { soldCount: 0, soldPrices: [], soldDates: [], success: false };
 
   try {
     const encodedQuery = encodeURIComponent(query);
-    const url = `https://www.ebay.com/sch/i.html?_nkw=${encodedQuery}&LH_Sold=1&LH_Complete=1&_ipg=240&rt=nc`;
+    // LH_ItemCondition: 1000 = New, 3000 = Used
+    let conditionParam = '';
+    if (condition === 'NEW') {
+      conditionParam = '&LH_ItemCondition=1000';
+    } else if (condition === 'USED') {
+      conditionParam = '&LH_ItemCondition=3000';
+    }
+    const url = `https://www.ebay.com/sch/i.html?_nkw=${encodedQuery}&LH_Sold=1&LH_Complete=1&_ipg=240&rt=nc${conditionParam}`;
 
     const response = await fetch(url, {
       headers: {

@@ -112,7 +112,7 @@ export default function SaveSearchButton({ result, isPro, isLoggedIn }: SaveSear
               <div className="flex items-center gap-3 text-xs text-gray-500">
                 <span className={`font-bold ${
                   result.verdict === 'BUY' ? 'text-green-600' :
-                  result.verdict === 'RISKY' ? 'text-amber-600' : 'text-red-600'
+                  result.verdict === 'MAYBE' ? 'text-yellow-600' : 'text-red-600'
                 }`}>{result.verdict}</span>
                 <span>{result.sellThroughRate}% sell-through</span>
                 <span>Avg ${result.avgSoldPrice.toFixed(2)}</span>

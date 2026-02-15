@@ -22,7 +22,7 @@ export default function VerdictBadge({ verdict, showLabel = false, size = 'md' }
         style={{ backgroundColor: color }}
       >
         {verdict === 'BUY' && '✓ '}
-        {verdict === 'RISKY' && '⚠ '}
+        {verdict === 'MAYBE' && '? '}
         {verdict === 'PASS' && '✗ '}
         {verdict}
       </span>

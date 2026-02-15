@@ -7,13 +7,21 @@ import { scrapeEbaySoldData, calculateAvgDaysToSell } from './scraper';
 const EBAY_BROWSE_API = 'https://api.ebay.com/buy/browse/v1';
 
 // Search active listings via eBay Browse API
-async function searchActive(query: string, limit = 50): Promise<EbaySearchResponse> {
+async function searchActive(query: string, limit = 50, condition?: string): Promise<EbaySearchResponse> {
   const token = await getEbayToken();
+
+  // Build filter: always require FIXED_PRICE, optionally add condition
+  let filter = 'buyingOptions:{FIXED_PRICE}';
+  if (condition === 'NEW') {
+    filter += ',conditions:{NEW}';
+  } else if (condition === 'USED') {
+    filter += ',conditions:{USED}';
+  }
 
   const params = new URLSearchParams({
     q: query,
     limit: limit.toString(),
-    filter: 'buyingOptions:{FIXED_PRICE}',
+    filter,
   });
 
   const response = await fetch(`${EBAY_BROWSE_API}/item_summary/search?${params}`, {
@@ -71,12 +79,12 @@ function mapToTopListing(item: EbayItemSummary): TopListing {
 }
 
 // Main search function — Browse API (active) + Scraper (sold) in parallel
-export async function searchEbay(query: string): Promise<SellThroughResult> {
+export async function searchEbay(query: string, condition?: string): Promise<SellThroughResult> {
   try {
     // Run Browse API and sold scraper in parallel
     const [activeResult, soldResult] = await Promise.allSettled([
-      searchActive(query, 200),
-      scrapeEbaySoldData(query),
+      searchActive(query, 200, condition),
+      scrapeEbaySoldData(query, condition),
     ]);
 
     // Active data from Browse API (required — throw if this fails)

@@ -16,7 +16,7 @@ const HOW_IT_WORKS = [
   {
     step: '2',
     title: 'Get your verdict',
-    desc: 'See sell-through rate, price ranges, and a clear BUY / RISKY / PASS recommendation.',
+    desc: 'See sell-through rate, price ranges, and a clear BUY / MAYBE / PASS recommendation.',
     icon: '📊',
   },
   {
@@ -136,10 +136,10 @@ export default function HomePage() {
                   <span className="text-green-500">✓</span> Sell-through rate + verdict
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Price range data
+                  <span className="text-green-500">✓</span> Deal Calculator + condition filter
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> eBay marketplace data
+                  <span className="text-green-500">✓</span> Comp Check + Sourcing Calculator
                 </li>
               </ul>
             </div>
@@ -159,16 +159,13 @@ export default function HomePage() {
                   <span className="text-green-500">✓</span> Unlimited searches
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Pricing slider — best price to sell fast
+                  <span className="text-green-500">✓</span> Smart Insights — tips per search
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Profit calculator with eBay fees
+                  <span className="text-green-500">✓</span> Interactive Price-to-Speed slider
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Shipping cost estimator
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Search history + watchlist
+                  <span className="text-green-500">✓</span> Saved Searches + profile
                 </li>
               </ul>
             </div>

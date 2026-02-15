@@ -11,7 +11,7 @@ export interface SearchResult {
   priceLow: number;
   priceHigh: number;
   avgDaysToSell: number;
-  verdict: "BUY" | "RISKY" | "PASS";
+  verdict: "BUY" | "MAYBE" | "PASS";
 }
 
 interface ResultCardProps {
@@ -25,10 +25,10 @@ const VERDICT_CONFIG = {
     border: "border-emerald-200",
     label: "STRONG BUY",
   },
-  RISKY: {
-    bg: "bg-amber-500",
-    border: "border-amber-200",
-    label: "RISKY",
+  MAYBE: {
+    bg: "bg-yellow-500",
+    border: "border-yellow-200",
+    label: "MAYBE",
   },
   PASS: {
     bg: "bg-red-500",
