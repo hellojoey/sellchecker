@@ -24,6 +24,8 @@ function SearchContent() {
   const [isPro, setIsPro] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [condition, setCondition] = useState<ConditionValue>('');
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [authPromptQuery, setAuthPromptQuery] = useState('');
   const prevQueryRef = useRef('');
 
   // Check user plan on mount
@@ -77,9 +79,10 @@ function SearchContent() {
       const res = await fetch(url);
       const data = await res.json();
 
-      // Require login — redirect to auth
+      // Require login — show inline auth prompt
       if (res.status === 401 && data.requireLogin) {
-        window.location.href = `/login?redirect=/search?q=${encodeURIComponent(q)}`;
+        setShowAuthPrompt(true);
+        setAuthPromptQuery(q);
         return;
       }
 
@@ -137,6 +140,38 @@ function SearchContent() {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
             Checking sell-through data...
+          </div>
+        </div>
+      )}
+
+      {/* Auth prompt — shown after search for anonymous users */}
+      {showAuthPrompt && !loading && (
+        <div className="animate-fade-in max-w-md mx-auto mt-4">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-8 text-center">
+            <div className="text-4xl mb-3">🔍</div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              Your results are ready!
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Create a free account to see sell-through rates, pricing data, and more for <strong>&ldquo;{authPromptQuery}&rdquo;</strong>. It only takes 10 seconds.
+            </p>
+            <div className="flex flex-col gap-3">
+              <a
+                href={`/login?redirect=${encodeURIComponent(`/search?q=${encodeURIComponent(authPromptQuery)}`)}`}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition text-center"
+              >
+                Sign up free
+              </a>
+              <a
+                href={`/login?redirect=${encodeURIComponent(`/search?q=${encodeURIComponent(authPromptQuery)}`)}`}
+                className="w-full text-sm text-gray-500 hover:text-gray-700 font-medium py-2 transition text-center"
+              >
+                Already have an account? Log in
+              </a>
+            </div>
+            <p className="text-xs text-gray-400 mt-4">
+              Free plan includes 5 SellChecks per day
+            </p>
           </div>
         </div>
       )}
