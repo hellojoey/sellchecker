@@ -9,7 +9,9 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const plan = searchParams.get('plan');
-  const redirect = searchParams.get('redirect');
+  // Prevent open redirect — only allow relative paths
+  const rawRedirect = searchParams.get('redirect');
+  const redirect = rawRedirect?.startsWith('/') && !rawRedirect?.startsWith('//') ? rawRedirect : null;
   const authError = searchParams.get('error');
 
   const [mode, setMode] = useState<'login' | 'signup'>(plan === 'pro' ? 'signup' : 'login');
@@ -95,6 +97,14 @@ function LoginContent() {
           return;
         }
 
+        // Detect existing user (Supabase returns empty identities to prevent email enumeration)
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
+          setError('An account with this email already exists. Try logging in instead.');
+          setMode('login');
+          setLoading(false);
+          return;
+        }
+
         // Show confirmation email screen
         setConfirmationSent(true);
         setLoading(false);
@@ -116,6 +126,10 @@ function LoginContent() {
           const checkout = await res.json();
           if (checkout.url) {
             window.location.href = checkout.url;
+            return;
+          } else {
+            // Checkout failed — redirect to pricing instead of getting stuck
+            router.push('/pricing?plan=pro');
             return;
           }
         }

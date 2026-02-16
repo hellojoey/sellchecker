@@ -33,7 +33,8 @@ function SearchContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const prevQueryRef = useRef('');
 
-  // Check user plan + onboarding on mount
+  // Check user plan + onboarding on mount (re-check when upgraded param changes)
+  const upgraded = searchParams.get('upgraded');
   useEffect(() => {
     const checkPlan = async () => {
       const supabase = createClient();
@@ -55,7 +56,7 @@ function SearchContent() {
       }
     };
     checkPlan();
-  }, []);
+  }, [upgraded]);
 
   useEffect(() => {
     if (query) {

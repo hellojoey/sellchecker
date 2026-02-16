@@ -191,7 +191,8 @@ BEGIN
   SELECT plan, searches_today, searches_reset_at
   INTO v_plan, v_searches, v_reset_date
   FROM public.profiles
-  WHERE id = p_user_id;
+  WHERE id = p_user_id
+  FOR UPDATE;
 
   -- Pro users: unlimited
   IF v_plan = 'pro' THEN

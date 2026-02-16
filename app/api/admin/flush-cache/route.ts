@@ -6,7 +6,11 @@ import { createServiceClient } from '@/lib/supabase/server';
 export async function POST(request: NextRequest) {
   // Simple secret-based auth for admin endpoints
   const authHeader = request.headers.get('authorization');
-  const adminSecret = process.env.ADMIN_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const adminSecret = process.env.ADMIN_SECRET;
+
+  if (!adminSecret) {
+    return NextResponse.json({ error: 'Admin endpoint not configured' }, { status: 503 });
+  }
 
   if (!authHeader || authHeader !== `Bearer ${adminSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

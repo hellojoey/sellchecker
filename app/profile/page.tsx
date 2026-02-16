@@ -146,9 +146,16 @@ export default function ProfilePage() {
                 </Link>
               )}
               {profile.plan === 'pro' && (
-                <Link href="/api/billing/portal" className="text-xs text-gray-500 hover:text-gray-700">
+                <button
+                  onClick={async () => {
+                    const res = await fetch('/api/billing/portal', { method: 'POST' });
+                    const data = await res.json();
+                    if (data.url) window.location.href = data.url;
+                  }}
+                  className="text-xs text-gray-500 hover:text-gray-700"
+                >
                   Manage billing
-                </Link>
+                </button>
               )}
             </div>
           </div>

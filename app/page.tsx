@@ -1,5 +1,32 @@
 import SearchBar from '@/components/SearchBar';
 
+// JSON-LD structured data for search engines
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'SellChecker',
+  url: 'https://sellchecker.app',
+  description: 'Instant sell-through rates for resellers. Check demand, pricing, and competition on any eBay item in seconds.',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'All',
+  offers: [
+    {
+      '@type': 'Offer',
+      name: 'Free',
+      price: '0',
+      priceCurrency: 'USD',
+      description: '5 SellChecks per day with sell-through rate and verdict',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Pro',
+      price: '10',
+      priceCurrency: 'USD',
+      description: 'Unlimited SellChecks, Smart Insights, Deal Calculator, Comp Check, Saved Searches',
+    },
+  ],
+};
+
 const SOCIAL_PROOF = [
   { stat: '50K+', label: 'Searches run' },
   { stat: '12K+', label: 'Resellers' },
@@ -30,6 +57,12 @@ const HOW_IT_WORKS = [
 export default function HomePage() {
   return (
     <div>
+      {/* JSON-LD structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* Hero */}
       <section className="relative overflow-hidden">
         {/* Background gradient */}
