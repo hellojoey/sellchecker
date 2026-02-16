@@ -1,7 +1,7 @@
 // /api/search — Core search endpoint
 // GET /api/search?q=Lululemon+Define+Jacket&condition=NEW|USED
 import { NextRequest, NextResponse } from 'next/server';
-import { searchEbay } from '@/lib/ebay/browse';
+import { searchEbay, EbayApiError } from '@/lib/ebay/browse';
 import { hashQuery, normalizeQuery, getCachedResult, setCachedResult } from '@/lib/cache';
 import { createServerSupabase, createServiceClient } from '@/lib/supabase/server';
 import { getVerdict } from '@/lib/sellthrough';
@@ -49,6 +49,16 @@ export async function GET(request: NextRequest) {
     // 2. Check cache — cache hits are free for authenticated users
     const cached = await getCachedResult(supabase, queryHash);
     if (cached) {
+      // Record search history (fire and forget)
+      recordSearch(supabase, user.id, cached.query, {
+        soldCount90d: cached.sold_count_90d,
+        activeCount: cached.active_count,
+        sellThroughRate: cached.sell_through_rate,
+        avgSoldPrice: cached.avg_sold_price,
+        medianSoldPrice: cached.median_sold_price,
+        verdict: cached.verdict,
+      }, false).catch(() => {});
+
       return NextResponse.json({
         result: {
           query: cached.query,
@@ -88,18 +98,29 @@ export async function GET(request: NextRequest) {
     // 4. Cache the result
     await setCachedResult(supabase, queryHash, normalized, result);
 
-    // 5. Track trending (fire and forget)
-    trackTrending(supabase, normalized).catch(() => {});
-
-    // 6. Get remaining searches for free users
-    let remainingSearches: number | null = null;
+    // 5. Get user profile for remaining count + history
     const { data: profile } = await supabase
       .from('profiles')
       .select('plan, searches_today')
       .eq('id', user.id)
       .single();
-    if (profile?.plan === 'free') {
-      remainingSearches = Math.max(0, 5 - (profile.searches_today || 0));
+    const isPro = profile?.plan === 'pro';
+
+    // 6. Track trending + search history (fire and forget)
+    trackTrending(supabase, normalized).catch(() => {});
+    recordSearch(supabase, user.id, normalized, {
+      soldCount90d: result.soldCount90d,
+      activeCount: result.activeCount,
+      sellThroughRate: result.sellThroughRate,
+      avgSoldPrice: result.avgSoldPrice,
+      medianSoldPrice: result.medianSoldPrice,
+      verdict: result.verdict,
+    }, isPro).catch(() => {});
+
+    // 7. Remaining searches for free users
+    let remainingSearches: number | null = null;
+    if (!isPro) {
+      remainingSearches = Math.max(0, 5 - (profile?.searches_today || 0));
     }
 
     return NextResponse.json({
@@ -120,10 +141,72 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Classified error responses
+    if (error.message === 'SEARCH_TIMEOUT' || error.name === 'TimeoutError' || error.name === 'AbortError') {
+      return NextResponse.json(
+        { error: 'Search timed out. Please try again.', errorCode: 'TIMEOUT' },
+        { status: 504 }
+      );
+    }
+
+    if (error instanceof EbayApiError) {
+      const status = error.ebayStatus;
+      if (status === 400 || status === 404) {
+        return NextResponse.json(
+          { error: 'No results found. Try a different search term.', errorCode: 'BAD_QUERY' },
+          { status: 400 }
+        );
+      }
+      if (status === 401 || status === 403) {
+        return NextResponse.json(
+          { error: 'eBay connection issue. Please try again.', errorCode: 'EBAY_AUTH' },
+          { status: 502 }
+        );
+      }
+      if (status >= 500) {
+        return NextResponse.json(
+          { error: 'eBay is temporarily unavailable. Please try again.', errorCode: 'EBAY_DOWN' },
+          { status: 503 }
+        );
+      }
+    }
+
     return NextResponse.json(
-      { error: 'Search failed. Please try again.' },
+      { error: 'Search failed. Please try again.', errorCode: 'UNKNOWN' },
       { status: 500 }
     );
+  }
+}
+
+// Record search to searches table for history (fire-and-forget, non-critical)
+async function recordSearch(
+  supabase: any,
+  userId: string,
+  query: string,
+  data: {
+    soldCount90d: number;
+    activeCount: number;
+    sellThroughRate: number;
+    avgSoldPrice: number;
+    medianSoldPrice: number;
+    verdict: string;
+  },
+  isProSearch: boolean
+) {
+  try {
+    await supabase.from('searches').insert({
+      user_id: userId,
+      query,
+      sold_count_90d: data.soldCount90d,
+      active_count: data.activeCount,
+      sell_through_rate: data.sellThroughRate,
+      avg_sold_price: data.avgSoldPrice,
+      median_sold_price: data.medianSoldPrice,
+      verdict: data.verdict,
+      is_pro_search: isProSearch,
+    });
+  } catch {
+    // Silently fail — search history is non-critical
   }
 }
 

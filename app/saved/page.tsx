@@ -20,8 +20,21 @@ interface SavedSearch {
   created_at: string;
 }
 
+interface RecentSearch {
+  id: string;
+  query: string;
+  sell_through_rate: number;
+  verdict: string;
+  avg_sold_price: number;
+  median_sold_price: number;
+  sold_count_90d: number;
+  active_count: number;
+  searched_at: string;
+}
+
 export default function SavedPage() {
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPro, setIsPro] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -50,6 +63,17 @@ export default function SavedPage() {
       .select('plan')
       .eq('id', user.id)
       .single();
+
+    // Fetch recent searches for all logged-in users
+    try {
+      const historyRes = await fetch('/api/search-history?page=1');
+      if (historyRes.ok) {
+        const historyData = await historyRes.json();
+        setRecentSearches(historyData.searches || []);
+      }
+    } catch {
+      // Non-critical — recent searches are just a nice-to-have
+    }
 
     if (profile?.plan === 'pro') {
       setIsPro(true);
@@ -151,21 +175,28 @@ export default function SavedPage() {
 
   if (!isPro) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <div className="text-5xl mb-4">📋</div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Saved Searches</h1>
-        <p className="text-gray-600 mb-2">
-          Save your research with Cost of Goods so you never have to re-search at the thrift store.
-        </p>
-        <p className="text-sm text-gray-500 mb-6">
-          This feature is available for Pro members.
-        </p>
-        <Link
-          href="/pricing"
-          className="inline-block bg-green-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-green-700 transition"
-        >
-          Upgrade to Pro
-        </Link>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        <div className="text-center py-12">
+          <div className="text-5xl mb-4">📋</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Saved Searches</h1>
+          <p className="text-gray-600 mb-2">
+            Save your research with Cost of Goods so you never have to re-search at the thrift store.
+          </p>
+          <p className="text-sm text-gray-500 mb-6">
+            This feature is available for Pro members.
+          </p>
+          <Link
+            href="/pricing"
+            className="inline-block bg-green-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-green-700 transition"
+          >
+            Upgrade to Pro
+          </Link>
+        </div>
+
+        {/* Recent Searches for free users — limited to 3 */}
+        {recentSearches.length > 0 && (
+          <RecentSearchesSection searches={recentSearches} maxVisible={3} showUpgrade />
+        )}
       </div>
     );
   }
@@ -189,6 +220,11 @@ export default function SavedPage() {
           New Search
         </Link>
       </div>
+
+      {/* Recent Searches for pro users — show up to 10 */}
+      {recentSearches.length > 0 && (
+        <RecentSearchesSection searches={recentSearches} maxVisible={10} />
+      )}
 
       {/* Portfolio summary */}
       {savedSearches.length > 0 && itemsWithCog > 0 && (
@@ -378,6 +414,107 @@ export default function SavedPage() {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+// Recent Searches section component
+function RecentSearchesSection({
+  searches,
+  maxVisible,
+  showUpgrade,
+}: {
+  searches: RecentSearch[];
+  maxVisible: number;
+  showUpgrade?: boolean;
+}) {
+  const visible = searches.slice(0, maxVisible);
+  const hasMore = searches.length > maxVisible;
+
+  function formatRelativeDate(dateStr: string): string {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    return `${days}d ago`;
+  }
+
+  function verdictStyle(verdict: string): string {
+    switch (verdict) {
+      case 'S_TIER': return 'bg-purple-100 text-purple-700';
+      case 'STRONG_BUY': return 'bg-green-100 text-green-800';
+      case 'BUY': return 'bg-green-100 text-green-700';
+      case 'MAYBE': return 'bg-yellow-100 text-yellow-700';
+      default: return 'bg-red-100 text-red-700';
+    }
+  }
+
+  function verdictLabel(verdict: string): string {
+    if (verdict === 'STRONG_BUY') return 'STRONG BUY';
+    if (verdict === 'S_TIER') return 'S-TIER';
+    return verdict;
+  }
+
+  return (
+    <div className="mb-8">
+      <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+        <span>🕐</span> Recent Searches
+      </h2>
+      <div className="space-y-2">
+        {visible.map((search) => (
+          <Link
+            key={search.id}
+            href={`/search?q=${encodeURIComponent(search.query)}`}
+            className="flex items-center justify-between bg-white rounded-xl border border-gray-100 shadow-sm p-3.5 hover:border-green-200 hover:shadow-md transition group"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${verdictStyle(search.verdict)}`}>
+                {verdictLabel(search.verdict)}
+              </span>
+              <span className="text-sm font-medium text-gray-900 truncate group-hover:text-green-600 transition">
+                {search.query}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 shrink-0 ml-3">
+              <span className="text-xs text-gray-500">{search.sell_through_rate}% STR</span>
+              <span className="text-xs text-gray-400">{formatRelativeDate(search.searched_at)}</span>
+              <svg className="w-4 h-4 text-gray-300 group-hover:text-green-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
+        ))}
+
+        {/* Blurred items + upgrade prompt for free users */}
+        {showUpgrade && hasMore && (
+          <div className="relative">
+            <div className="space-y-2 blur-sm pointer-events-none select-none">
+              {searches.slice(maxVisible, maxVisible + 2).map((search) => (
+                <div
+                  key={search.id}
+                  className="flex items-center justify-between bg-white rounded-xl border border-gray-100 p-3.5"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${verdictStyle(search.verdict)}`}>
+                      {verdictLabel(search.verdict)}
+                    </span>
+                    <span className="text-sm font-medium text-gray-900">{search.query}</span>
+                  </div>
+                  <span className="text-xs text-gray-500">{search.sell_through_rate}% STR</span>
+                </div>
+              ))}
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Link
+                href="/pricing"
+                className="bg-green-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-green-700 transition shadow-lg"
+              >
+                Upgrade to Pro for full history
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -51,9 +51,6 @@ export default function SearchResults({
             </h2>
             <p className="text-sm text-gray-500 mt-0.5">
               {result.totalResults.toLocaleString()} results on eBay
-              {result.dataSource === 'estimated' && (
-                <span className="text-xs text-amber-500 ml-1">(estimated)</span>
-              )}
             </p>
           </div>
           {/* Condition Filter — greyed out for free */}
@@ -64,6 +61,18 @@ export default function SearchResults({
           />
         </div>
       </div>
+
+      {/* Estimated data warning banner */}
+      {result.dataSource === 'estimated' && (
+        <div className="bg-amber-50 border-b border-amber-100 px-4 py-2.5 sm:px-6 flex items-center gap-2">
+          <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <p className="text-xs text-amber-700">
+            Sold data is estimated. Actual figures may vary.
+          </p>
+        </div>
+      )}
 
       <div className="p-4 sm:p-6">
         {/* Gauge + Verdict */}

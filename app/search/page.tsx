@@ -10,6 +10,7 @@ import ProFeatureCatalog from '@/components/ProFeatureCatalog';
 import CompCheckTeaser from '@/components/CompCheckTeaser';
 import TrendingSearches from '@/components/TrendingSearches';
 import SaveSearchButton from '@/components/SaveSearchButton';
+import OnboardingModal from '@/components/OnboardingModal';
 import { createClient } from '@/lib/supabase/client';
 import { calculateSellThrough, getVerdict, median, type SellThroughResult } from '@/lib/sellthrough';
 import type { ConditionValue } from '@/components/ConditionFilter';
@@ -21,6 +22,7 @@ function SearchContent() {
   const [result, setResult] = useState<SellThroughResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [isPro, setIsPro] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -28,9 +30,10 @@ function SearchContent() {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [authPromptQuery, setAuthPromptQuery] = useState('');
   const [excludedIndices, setExcludedIndices] = useState<Set<number>>(new Set());
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const prevQueryRef = useRef('');
 
-  // Check user plan on mount
+  // Check user plan + onboarding on mount
   useEffect(() => {
     const checkPlan = async () => {
       const supabase = createClient();
@@ -44,6 +47,10 @@ function SearchContent() {
           .single();
         if (data?.plan === 'pro') {
           setIsPro(true);
+        }
+        // Show onboarding for new users
+        if (!localStorage.getItem('sellchecker_onboarded')) {
+          setShowOnboarding(true);
         }
       }
     };
@@ -111,9 +118,15 @@ function SearchContent() {
     router.push(`/search?q=${encodeURIComponent(title)}`);
   };
 
+  const handleOnboardingComplete = () => {
+    localStorage.setItem('sellchecker_onboarded', '1');
+    setShowOnboarding(false);
+  };
+
   const runSearch = async (q: string, cond: ConditionValue = condition) => {
     setLoading(true);
     setError(null);
+    setErrorCode(null);
 
     try {
       let url = `/api/search?q=${encodeURIComponent(q)}`;
@@ -132,6 +145,7 @@ function SearchContent() {
 
       if (!res.ok) {
         setError(data.error || 'Something went wrong');
+        setErrorCode(data.errorCode || null);
         return;
       }
 
@@ -140,6 +154,7 @@ function SearchContent() {
       setRemaining(data.remainingSearches ?? null);
     } catch (err) {
       setError('Failed to connect. Please try again.');
+      setErrorCode('UNKNOWN');
     } finally {
       setLoading(false);
     }
@@ -150,6 +165,9 @@ function SearchContent() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      {/* Onboarding modal for new users */}
+      {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
+
       {/* Search bar at top */}
       <div className="mb-4">
         <SearchBar initialQuery={query} autoFocus />
@@ -232,6 +250,17 @@ function SearchContent() {
             <a href="/pricing" className="text-sm text-red-600 underline mt-2 inline-block">
               Upgrade to Pro for unlimited SellChecks
             </a>
+          )}
+          {errorCode && ['TIMEOUT', 'EBAY_DOWN', 'EBAY_AUTH', 'UNKNOWN'].includes(errorCode) && (
+            <button
+              onClick={() => runSearch(query, condition)}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-red-600 hover:text-red-700 mt-3 transition"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Try again
+            </button>
           )}
         </div>
       )}
