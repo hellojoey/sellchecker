@@ -17,7 +17,7 @@ export default function CompCheckTeaser({ listings, query, onSearchTitle }: Comp
   return (
     <div className="mt-6 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-gray-50 to-white px-6 py-3 border-b border-gray-100 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-gray-50 to-white px-4 py-3 sm:px-6 border-b border-gray-100 flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
             <span>🏷️</span> Your Competition
@@ -79,18 +79,18 @@ export default function CompCheckTeaser({ listings, query, onSearchTitle }: Comp
                 </span>
               </div>
               {/* Per-listing actions (visible for free users too) */}
-              <div className="mt-2 pt-2 border-t border-gray-50 flex flex-col gap-1">
+              <div className="mt-2 pt-2 border-t border-gray-50 flex flex-col gap-0.5">
                 <a
                   href={`https://www.ebay.com/sl/list?keyword=${encodeURIComponent(visibleListing.title)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] text-blue-600 hover:underline"
+                  className="text-xs text-blue-600 hover:underline py-1 min-h-[36px] flex items-center"
                 >
                   Sell Similar &rarr;
                 </a>
                 <button
                   onClick={() => onSearchTitle(visibleListing.title)}
-                  className="text-[10px] text-green-600 hover:underline text-left"
+                  className="text-xs text-green-600 hover:underline text-left py-1 min-h-[36px] flex items-center"
                 >
                   Search this title
                 </button>

@@ -8,6 +8,7 @@
   body {
     @apply bg-white text-gray-900 antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -38,4 +39,26 @@
 
 .animate-slide-up {
   animation: slideUp 0.6s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.2s ease-out;
+}
+
+/* Touch device overrides */
+@media (hover: none) and (pointer: coarse) {
+  /* Bigger slider handles on touch screens */
+  input[type="range"] {
+    min-height: 44px;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
 }

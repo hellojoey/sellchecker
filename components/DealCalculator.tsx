@@ -58,7 +58,7 @@ export default function DealCalculator({ result, isPro = false, embedded = false
           {/* COG Input — disabled */}
           <div>
             <div className="block text-xs font-medium text-gray-400 mb-1.5">What did you pay?</div>
-            <div className="relative max-w-[200px]">
+            <div className="relative max-w-full sm:max-w-[200px]">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-sm">$</span>
               <input
                 type="text"
@@ -166,7 +166,7 @@ export default function DealCalculator({ result, isPro = false, embedded = false
           <label htmlFor="deal-cog" className="block text-xs font-medium text-gray-600 mb-1.5">
             What did you pay?
           </label>
-          <div className="relative max-w-[200px]">
+          <div className="relative max-w-full sm:max-w-[200px]">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
             <input
               id="deal-cog"
@@ -195,7 +195,7 @@ export default function DealCalculator({ result, isPro = false, embedded = false
                   setSelectedWeight(idx);
                   setShippingOverride('');
                 }}
-                className={`text-left rounded-lg p-2.5 border-2 transition text-xs ${
+                className={`text-left rounded-lg p-2.5 border-2 transition text-xs min-h-[44px] ${
                   idx === selectedWeight
                     ? 'border-green-500 bg-green-50'
                     : 'border-gray-100 hover:border-gray-200'
@@ -217,7 +217,7 @@ export default function DealCalculator({ result, isPro = false, embedded = false
           )}
 
           <div className="mt-2">
-            <div className="relative max-w-[200px]">
+            <div className="relative max-w-full sm:max-w-[200px]">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
               <input
                 type="number"
@@ -237,7 +237,7 @@ export default function DealCalculator({ result, isPro = false, embedded = false
         </div>
 
         {/* Profit Breakdown */}
-        <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+        <div className="bg-gray-50 rounded-xl p-3 sm:p-4 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Median sale price</span>
             <span className="text-gray-900 font-medium">${salePrice.toFixed(2)}</span>

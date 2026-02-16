@@ -52,7 +52,7 @@ export default function HomePage() {
           </div>
 
           {/* Quick stats */}
-          <div className="flex items-center justify-center gap-8 mt-10 animate-fade-in">
+          <div className="flex items-center justify-center gap-4 sm:gap-8 mt-10 animate-fade-in">
             {SOCIAL_PROOF.map((item) => (
               <div key={item.label} className="text-center">
                 <div className="text-2xl font-bold text-gray-900">{item.stat}</div>
@@ -75,7 +75,7 @@ export default function HomePage() {
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
             {HOW_IT_WORKS.map((item) => (
-              <div key={item.step} className="text-center p-6">
+              <div key={item.step} className="text-center p-4 sm:p-6">
                 <div className="text-4xl mb-4">{item.icon}</div>
                 <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-700 font-bold text-sm mb-3">
                   {item.step}
@@ -97,14 +97,14 @@ export default function HomePage() {
             SellChecker helps you make smarter sourcing decisions.
           </p>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {[
               { emoji: '🏪', title: 'Thrift Flippers', desc: 'Check brands on the spot while you shop' },
               { emoji: '📱', title: 'eBay Sellers', desc: 'Know exactly what to list next' },
               { emoji: '🏷️', title: 'eBay PowerSellers', desc: 'Scale with data-driven sourcing' },
               { emoji: '🎯', title: 'Retail Arbitrage', desc: 'Scan clearance with confidence' },
             ].map((item) => (
-              <div key={item.title} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div key={item.title} className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
                 <div className="text-3xl mb-3">{item.emoji}</div>
                 <h3 className="font-semibold text-gray-900 mb-1">{item.title}</h3>
                 <p className="text-sm text-gray-500">{item.desc}</p>
@@ -122,7 +122,7 @@ export default function HomePage() {
 
           <div className="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
             {/* Free */}
-            <div className="bg-white rounded-2xl p-8 border-2 border-gray-200 text-left">
+            <div className="bg-white rounded-2xl p-5 sm:p-8 border-2 border-gray-200 text-left">
               <h3 className="font-semibold text-gray-900 text-lg">Free</h3>
               <div className="mt-2 mb-6">
                 <span className="text-4xl font-bold">$0</span>
@@ -142,7 +142,7 @@ export default function HomePage() {
             </div>
 
             {/* Pro */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border-2 border-green-500 text-left relative">
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 sm:p-8 border-2 border-green-500 text-left relative">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">
                 POPULAR
               </div>

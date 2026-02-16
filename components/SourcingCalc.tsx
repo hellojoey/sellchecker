@@ -57,7 +57,7 @@ export default function SourcingCalc({ result }: SourcingCalcProps) {
   return (
     <div className="mt-6 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 px-6 py-3 border-b border-amber-100">
+      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 px-4 py-3 sm:px-6 border-b border-amber-100">
         <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
           <span>🧮</span> Sourcing Calculator
         </h3>
@@ -66,7 +66,7 @@ export default function SourcingCalc({ result }: SourcingCalcProps) {
         </p>
       </div>
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* Target ROI selector */}
         <div className="mb-5">
           <label className="block text-xs font-medium text-gray-600 mb-2">
@@ -80,7 +80,7 @@ export default function SourcingCalc({ result }: SourcingCalcProps) {
                   setSelectedPreset(idx);
                   if (preset.value > 0) setTargetRoi(preset.value);
                 }}
-                className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg border-2 transition ${
+                className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg border-2 transition min-h-[44px] ${
                   selectedPreset === idx
                     ? 'border-amber-500 bg-amber-50 text-amber-800'
                     : 'border-gray-100 text-gray-600 hover:border-gray-200'
@@ -91,7 +91,7 @@ export default function SourcingCalc({ result }: SourcingCalcProps) {
             ))}
           </div>
           {selectedPreset === 3 && (
-            <div className="mt-2 relative max-w-[140px]">
+            <div className="mt-2 relative max-w-full sm:max-w-[140px]">
               <input
                 type="number"
                 min="0"
@@ -110,7 +110,7 @@ export default function SourcingCalc({ result }: SourcingCalcProps) {
           <label className="block text-xs font-medium text-gray-600 mb-1">
             Est. shipping cost
           </label>
-          <div className="relative max-w-[140px]">
+          <div className="relative max-w-full sm:max-w-[140px]">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
             <input
               type="number"

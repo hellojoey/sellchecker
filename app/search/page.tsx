@@ -195,7 +195,7 @@ function SearchContent() {
       {/* Auth prompt — shown after search for anonymous users */}
       {showAuthPrompt && !loading && (
         <div className="animate-fade-in max-w-md mx-auto mt-4">
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-8 text-center">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 sm:p-8 text-center">
             <div className="text-4xl mb-3">🔍</div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">
               Your results are ready!

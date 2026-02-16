@@ -43,10 +43,10 @@ export default function SearchResults({
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-gray-50 to-white px-6 py-4 border-b border-gray-100">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-gray-50 to-white px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-100">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">
               &ldquo;{result.query}&rdquo;
             </h2>
             <p className="text-sm text-gray-500 mt-0.5">
@@ -65,7 +65,7 @@ export default function SearchResults({
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* Gauge + Verdict */}
         <div className="flex flex-col items-center mb-4">
           <SellThroughGauge rate={result.sellThroughRate} verdict={result.verdict} />
@@ -127,7 +127,7 @@ export default function SearchResults({
 function StatBox({ label, value, icon }: { label: string; value: string; icon: string }) {
   return (
     <div className="bg-gray-50 rounded-xl p-3 text-center">
-      <div className="text-lg mb-0.5">{icon}</div>
+      <div className="text-base sm:text-lg mb-0.5">{icon}</div>
       <div className="text-lg font-bold text-gray-900">{value}</div>
       <div className="text-xs text-gray-500">{label}</div>
     </div>
