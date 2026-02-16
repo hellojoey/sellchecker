@@ -26,7 +26,8 @@ function SearchContent() {
   const [remaining, setRemaining] = useState<number | null>(null);
   const [isPro, setIsPro] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [condition, setCondition] = useState<ConditionValue>('');
+  const conditionParam = (searchParams.get('condition') || '') as ConditionValue;
+  const [condition, setCondition] = useState<ConditionValue>(conditionParam);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [authPromptQuery, setAuthPromptQuery] = useState('');
   const [excludedIndices, setExcludedIndices] = useState<Set<number>>(new Set());
@@ -60,11 +61,14 @@ function SearchContent() {
 
   useEffect(() => {
     if (query) {
-      // Reset condition and exclusions when query changes
+      // Reset exclusions when query changes; keep condition from URL param
       if (query !== prevQueryRef.current) {
-        setCondition('');
+        const urlCondition = (searchParams.get('condition') || '') as ConditionValue;
+        setCondition(urlCondition);
         setExcludedIndices(new Set());
         prevQueryRef.current = query;
+        runSearch(query, urlCondition);
+        return;
       }
       runSearch(query, condition);
     }
@@ -73,6 +77,14 @@ function SearchContent() {
   // Re-run search when condition changes (if there's already a query)
   const handleConditionChange = (newCondition: ConditionValue) => {
     setCondition(newCondition);
+    // Persist condition in URL so refresh/share keeps it
+    const params = new URLSearchParams(searchParams.toString());
+    if (newCondition) {
+      params.set('condition', newCondition);
+    } else {
+      params.delete('condition');
+    }
+    router.replace(`/search?${params.toString()}`, { scroll: false });
     if (query) {
       runSearch(query, newCondition);
     }

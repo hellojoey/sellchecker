@@ -141,6 +141,38 @@ export default function SavedPage() {
     return search.median_sold_price - search.cost_of_goods - fees;
   };
 
+  // Export saved searches as CSV
+  const handleExportCsv = () => {
+    if (savedSearches.length === 0) return;
+    const headers = ['Query', 'Verdict', 'STR%', 'Avg Sold', 'Median Sold', 'Low', 'High', 'Cost of Goods', 'Est. Profit', 'ROI%', 'Notes', 'Saved Date'];
+    const rows = savedSearches.map((s) => {
+      const profit = calcProfit(s);
+      const roi = s.cost_of_goods && profit !== null ? ((profit / s.cost_of_goods) * 100).toFixed(1) : '';
+      return [
+        `"${s.query}"`,
+        s.verdict === 'STRONG_BUY' ? 'STRONG BUY' : s.verdict === 'S_TIER' ? 'S-TIER' : s.verdict,
+        s.sell_through_rate,
+        s.avg_sold_price.toFixed(2),
+        s.median_sold_price.toFixed(2),
+        s.price_low.toFixed(2),
+        s.price_high.toFixed(2),
+        s.cost_of_goods?.toFixed(2) || '',
+        profit !== null ? profit.toFixed(2) : '',
+        roi,
+        `"${(s.notes || '').replace(/"/g, '""')}"`,
+        new Date(s.created_at).toLocaleDateString(),
+      ].join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sellchecker-saved-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Total portfolio stats
   const totalCog = savedSearches.reduce((sum, s) => sum + (s.cost_of_goods || 0), 0);
   const totalEstProfit = savedSearches.reduce((sum, s) => {
@@ -210,15 +242,29 @@ export default function SavedPage() {
             {savedSearches.length} item{savedSearches.length !== 1 ? 's' : ''} saved
           </p>
         </div>
-        <Link
-          href="/search"
-          className="text-sm font-medium text-green-600 hover:text-green-700 flex items-center gap-1"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          New Search
-        </Link>
+        <div className="flex items-center gap-3">
+          {savedSearches.length > 0 && (
+            <button
+              onClick={handleExportCsv}
+              className="text-sm font-medium text-gray-500 hover:text-gray-700 flex items-center gap-1 transition"
+              title="Export as CSV"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              CSV
+            </button>
+          )}
+          <Link
+            href="/search"
+            className="text-sm font-medium text-green-600 hover:text-green-700 flex items-center gap-1"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            New Search
+          </Link>
+        </div>
       </div>
 
       {/* Recent Searches for pro users — show up to 10 */}

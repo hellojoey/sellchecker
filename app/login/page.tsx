@@ -14,7 +14,7 @@ function LoginContent() {
   const redirect = rawRedirect?.startsWith('/') && !rawRedirect?.startsWith('//') ? rawRedirect : null;
   const authError = searchParams.get('error');
 
-  const [mode, setMode] = useState<'login' | 'signup'>(plan === 'pro' ? 'signup' : 'login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>(plan === 'pro' ? 'signup' : 'login');
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [password, setPassword] = useState('');
@@ -22,6 +22,7 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [confirmationSent, setConfirmationSent] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
@@ -56,6 +57,28 @@ function LoginContent() {
       setResendStatus('error');
     }
   }, [email, resendCooldown, redirect]);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    setLoading(true);
+    setError('');
+    try {
+      const supabase = createClient();
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/api/auth/callback?next=/profile`,
+      });
+      if (resetError) {
+        setError(resetError.message);
+      } else {
+        setResetSent(true);
+      }
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,14 +174,18 @@ function LoginContent() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">
-            {plan === 'pro'
+            {mode === 'forgot'
+              ? 'Reset your password'
+              : plan === 'pro'
               ? 'Start your Pro trial'
               : mode === 'signup'
               ? 'Create your account'
               : 'Log in to SellChecker'}
           </h1>
           <p className="text-gray-600 mt-2">
-            {plan === 'pro'
+            {mode === 'forgot'
+              ? 'Enter your email and we\'ll send a reset link.'
+              : plan === 'pro'
               ? '7 days free. Cancel anytime.'
               : mode === 'signup'
               ? 'Get started with SellChecker.'
@@ -166,7 +193,8 @@ function LoginContent() {
           </p>
         </div>
 
-        {/* Tab toggle */}
+        {/* Tab toggle — hidden during forgot mode */}
+        {mode !== 'forgot' && (
         <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
           <button
             type="button"
@@ -191,6 +219,7 @@ function LoginContent() {
             Log In
           </button>
         </div>
+        )}
 
         {(authError || error) && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-center">
@@ -200,7 +229,23 @@ function LoginContent() {
           </div>
         )}
 
-        {confirmationSent ? (
+        {/* Password reset sent */}
+        {resetSent ? (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
+            <div className="text-4xl mb-3">🔑</div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Check your email!</h2>
+            <p className="text-sm text-gray-600">
+              We sent a password reset link to <strong>{email}</strong>.
+              Click it to set a new password.
+            </p>
+            <button
+              onClick={() => { setResetSent(false); setMode('login'); setError(''); }}
+              className="mt-4 text-sm text-green-600 hover:text-green-700 font-medium"
+            >
+              Back to Log In
+            </button>
+          </div>
+        ) : confirmationSent ? (
           <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
             <div className="text-4xl mb-3">✉️</div>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">Check your email!</h2>
@@ -238,6 +283,40 @@ function LoginContent() {
               Go to Log In
             </button>
           </div>
+        ) : mode === 'forgot' ? (
+
+        <form onSubmit={handleForgotPassword}>
+          <div className="mb-4">
+            <label htmlFor="resetEmail" className="block text-sm font-medium text-gray-700 mb-1">
+              Email address
+            </label>
+            <input
+              id="resetEmail"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition"
+              autoFocus
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold py-3 rounded-xl transition"
+          >
+            {loading ? 'Sending...' : 'Send reset link'}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMode('login'); setError(''); }}
+            className="w-full text-sm text-gray-500 hover:text-gray-700 font-medium py-3 mt-2 transition"
+          >
+            Back to Log In
+          </button>
+        </form>
+
         ) : (
 
         <form onSubmit={handleSubmit}>
@@ -275,9 +354,20 @@ function LoginContent() {
           </div>
 
           <div className="mb-4">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              {mode === 'login' && (
+                <button
+                  type="button"
+                  onClick={() => { setMode('forgot'); setError(''); }}
+                  className="text-xs text-green-600 hover:text-green-700 font-medium"
+                >
+                  Forgot password?
+                </button>
+              )}
+            </div>
             <input
               id="password"
               type="password"

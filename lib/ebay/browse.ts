@@ -164,7 +164,9 @@ export async function searchEbay(query: string, condition?: string): Promise<Sel
       // Fallback: estimate from active count
       soldCount90d = Math.round(activeCount * 0.4);
       soldPrices = [];
-      avgDaysToSell = Math.round(Math.random() * 14 + 3);
+      // Deterministic estimate: higher STR → faster sell, lower → slower
+      const estimatedSTR = calculateSellThrough(soldCount90d, activeCount);
+      avgDaysToSell = Math.max(3, Math.round(30 - (estimatedSTR * 0.25)));
       dataSource = 'estimated';
     }
 

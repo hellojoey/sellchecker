@@ -3,6 +3,7 @@ import Script from 'next/script';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import PwaInstallPrompt from '@/components/PwaInstallPrompt';
 
 const SITE_URL = 'https://sellchecker.app';
 
@@ -58,6 +59,7 @@ export default function RootLayout({
           {children}
         </main>
         <Footer />
+        <PwaInstallPrompt />
         {/* Plausible Analytics — privacy-friendly, no cookies, GDPR compliant */}
         <Script
           defer
