@@ -187,54 +187,6 @@ function SavedSearchesMockup() {
   );
 }
 
-function SEOTitleMockup() {
-  return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-          <span>{'\u2728'}</span> AI Title Optimizer
-        </h3>
-        <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-          COMING SOON
-        </span>
-      </div>
-      <div className="p-6 space-y-4">
-        {/* Original title */}
-        <div>
-          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Your title</p>
-          <div className="bg-gray-50 rounded-lg px-3 py-2.5 text-sm text-gray-600 border border-gray-200">
-            lululemon define jacket size 6 black used
-          </div>
-        </div>
-
-        {/* Arrow */}
-        <div className="flex justify-center">
-          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Optimized title — blurred */}
-        <div>
-          <p className="text-[10px] font-medium text-green-600 uppercase tracking-wider mb-1.5">SEO optimized</p>
-          <div className="relative">
-            <div className="blur-[4px] select-none pointer-events-none bg-green-50 rounded-lg px-3 py-2.5 text-sm text-green-800 border border-green-200 font-medium">
-              Lululemon Define Jacket Nulu Size 6 Black | Women&apos;s Athletic Full Zip | EUC
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[10px] font-semibold text-green-700 bg-white/80 px-2.5 py-1 rounded-full border border-green-200">
-                Upgrade to see
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ─── Main Component ─── */
 
 export default function ProFeatureCatalog() {
@@ -260,14 +212,6 @@ export default function ProFeatureCatalog() {
         'Save any search with your cost of goods. Build a sourcing list you can reference while you shop. Track profitability at a glance.',
       mockup: <SavedSearchesMockup />,
       bgColor: 'bg-amber-50/50',
-    },
-    {
-      title: 'AI-Optimized Listing Titles',
-      description:
-        'Get SEO-friendly titles that help your listings rank higher and sell faster. Coming soon to Pro.',
-      mockup: <SEOTitleMockup />,
-      reversed: true,
-      bgColor: 'bg-purple-50/50',
     },
   ];
 

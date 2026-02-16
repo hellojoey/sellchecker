@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -20,6 +20,40 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [confirmationSent, setConfirmationSent] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+
+  // Countdown timer for resend cooldown
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
+  const handleResendConfirmation = useCallback(async () => {
+    if (resendCooldown > 0 || !email) return;
+    setResendStatus('sending');
+    try {
+      const supabase = createClient();
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(
+            redirect || '/search'
+          )}`,
+        },
+      });
+      if (resendError) {
+        setResendStatus('error');
+      } else {
+        setResendStatus('sent');
+        setResendCooldown(60);
+      }
+    } catch {
+      setResendStatus('error');
+    }
+  }, [email, resendCooldown, redirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,8 +194,31 @@ function LoginContent() {
               We sent a confirmation link to <strong>{email}</strong>.
               Click it to verify your account, then you can log in.
             </p>
+
+            {/* Resend confirmation email */}
+            <div className="mt-5 pt-4 border-t border-green-200">
+              <p className="text-xs text-gray-500 mb-2">Didn&apos;t get the email? Check spam, or:</p>
+              <button
+                onClick={handleResendConfirmation}
+                disabled={resendCooldown > 0 || resendStatus === 'sending'}
+                className="text-sm font-medium text-green-600 hover:text-green-700 disabled:text-gray-400 disabled:cursor-not-allowed transition"
+              >
+                {resendStatus === 'sending'
+                  ? 'Sending...'
+                  : resendCooldown > 0
+                  ? `Resend email (${resendCooldown}s)`
+                  : 'Resend confirmation email'}
+              </button>
+              {resendStatus === 'sent' && resendCooldown > 0 && (
+                <p className="text-xs text-green-600 mt-1.5">✓ Email sent! Check your inbox.</p>
+              )}
+              {resendStatus === 'error' && (
+                <p className="text-xs text-red-600 mt-1.5">Failed to resend. Please try again.</p>
+              )}
+            </div>
+
             <button
-              onClick={() => { setConfirmationSent(false); setMode('login'); }}
+              onClick={() => { setConfirmationSent(false); setMode('login'); setResendStatus('idle'); }}
               className="mt-4 text-sm text-green-600 hover:text-green-700 font-medium"
             >
               Go to Log In
