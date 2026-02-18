@@ -1,8 +1,8 @@
 // eBay Browse API + Sold Listings Scraper — Hybrid approach for real sell-through data
 import { getEbayToken } from './auth';
 import type { EbaySearchResponse, EbayItemSummary } from './types';
-import { calculateSellThrough, getVerdict, median, type SellThroughResult, type TopListing } from '../sellthrough';
-import { scrapeEbaySoldData, calculateAvgDaysToSell } from './scraper';
+import { calculateSellThrough, getVerdict, median, getCategoryBenchmark, type SellThroughResult, type TopListing } from '../sellthrough';
+import { scrapeEbaySoldData, calculateAvgDaysToSell, type ScrapedSoldData } from './scraper';
 
 const EBAY_BROWSE_API = 'https://api.ebay.com/buy/browse/v1';
 const FETCH_TIMEOUT_MS = 6000; // 6s per attempt
@@ -122,6 +122,31 @@ function mapToTopListing(item: EbayItemSummary): TopListing {
   };
 }
 
+// Extract dominant category from items (most frequent top-level category)
+function extractDominantCategory(items: EbayItemSummary[]): string | undefined {
+  const categoryCount: Record<string, number> = {};
+
+  for (const item of items) {
+    if (item.categories && item.categories.length > 0) {
+      // Use the first (top-level) category
+      const catName = item.categories[0].categoryName;
+      categoryCount[catName] = (categoryCount[catName] || 0) + 1;
+    }
+  }
+
+  // Find the most frequent category
+  let maxCount = 0;
+  let dominant: string | undefined;
+  for (const [name, count] of Object.entries(categoryCount)) {
+    if (count > maxCount) {
+      maxCount = count;
+      dominant = name;
+    }
+  }
+
+  return dominant;
+}
+
 // Main search function — Browse API (active) + Scraper (sold) in parallel
 export async function searchEbay(query: string, condition?: string): Promise<SellThroughResult> {
   try {
@@ -148,19 +173,30 @@ export async function searchEbay(query: string, condition?: string): Promise<Sel
     const activeCount = activeResponse.total || activeItems.length;
 
     // Sold data from scraper (optional — fall back to estimation)
-    const soldData = soldResult.status === 'fulfilled' ? soldResult.value : null;
+    const soldData: ScrapedSoldData | null = soldResult.status === 'fulfilled' ? soldResult.value : null;
 
     let soldCount90d: number;
     let soldPrices: number[];
     let avgDaysToSell: number;
     let dataSource: 'scraped' | 'estimated';
 
-    if (soldData?.success && soldData.soldCount > 0) {
-      soldCount90d = soldData.soldCount;
-      soldPrices = soldData.soldPrices;
-      avgDaysToSell = calculateAvgDaysToSell(soldData.soldDates) || 7;
+    // Determine if scraper data is trustworthy
+    const scraperSuccess = soldData?.success && soldData.soldCount > 0;
+    // Sanity check: if scraper used DOM counting (low confidence) and there are 0 active listings,
+    // the DOM count likely picked up ads/suggestions, not real sold items
+    const domCountSuspect = scraperSuccess
+      && soldData!.parseStrategy === 'dom_count'
+      && activeCount === 0;
+
+    if (scraperSuccess && !domCountSuspect) {
+      soldCount90d = soldData!.soldCount;
+      soldPrices = soldData!.soldPrices;
+      avgDaysToSell = calculateAvgDaysToSell(soldData!.soldDates) || 7;
       dataSource = 'scraped';
     } else {
+      if (domCountSuspect) {
+        console.warn(`[SellChecker Browse] SUSPECT: query="${query}" DOM counted ${soldData!.soldCount} sold but activeCount=0 — falling back to estimation`);
+      }
       // Fallback: estimate from active count
       soldCount90d = Math.round(activeCount * 0.4);
       soldPrices = [];
@@ -175,6 +211,12 @@ export async function searchEbay(query: string, condition?: string): Promise<Sel
     const prices = soldPrices.length > 5 ? soldPrices : activePrices;
 
     const sellThroughRate = calculateSellThrough(soldCount90d, activeCount);
+
+    // Extract dominant category and look up benchmark
+    const category = extractDominantCategory(activeItems);
+    const categoryBenchmark = category ? getCategoryBenchmark(category) : undefined;
+
+    console.log(`[SellChecker Browse] query="${query}" active=${activeCount} sold=${soldCount90d} STR=${sellThroughRate}% source=${dataSource} strategy=${soldData?.parseStrategy || 'n/a'} category="${category || 'unknown'}"`);
 
     return {
       query,
@@ -193,6 +235,8 @@ export async function searchEbay(query: string, condition?: string): Promise<Sel
       platform: 'ebay',
       topListings: extractTopListings(activeItems),
       dataSource,
+      category,
+      categoryBenchmark,
     };
   } catch (error) {
     console.error('eBay search error:', error);

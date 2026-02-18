@@ -32,9 +32,21 @@ interface RecentSearch {
   searched_at: string;
 }
 
+interface WatchlistItem {
+  id: string;
+  query: string;
+  target_price: number | null;
+  alert_type: string;
+  last_str: number | null;
+  last_avg_price: number | null;
+  last_checked: string | null;
+  created_at: string;
+}
+
 export default function SavedPage() {
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPro, setIsPro] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -42,6 +54,7 @@ export default function SavedPage() {
   const [editCog, setEditCog] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [removingWatch, setRemovingWatch] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -78,10 +91,20 @@ export default function SavedPage() {
     if (profile?.plan === 'pro') {
       setIsPro(true);
 
-      const res = await fetch('/api/saved');
-      if (res.ok) {
-        const data = await res.json();
+      // Load saved searches and watchlist in parallel
+      const [savedRes, watchRes] = await Promise.allSettled([
+        fetch('/api/saved'),
+        fetch('/api/watchlist'),
+      ]);
+
+      if (savedRes.status === 'fulfilled' && savedRes.value.ok) {
+        const data = await savedRes.value.json();
         setSavedSearches(data.savedSearches || []);
+      }
+
+      if (watchRes.status === 'fulfilled' && watchRes.value.ok) {
+        const data = await watchRes.value.json();
+        setWatchlist(data.watchlist || []);
       }
     }
 
@@ -125,6 +148,21 @@ export default function SavedPage() {
       }
     } catch (err) {
       console.error('Update failed:', err);
+    }
+  };
+
+  const handleRemoveWatch = async (id: string) => {
+    if (!confirm('Remove this item from your watchlist?')) return;
+    setRemovingWatch(id);
+    try {
+      const res = await fetch(`/api/watchlist?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setWatchlist((prev) => prev.filter((w) => w.id !== id));
+      }
+    } catch (err) {
+      console.error('Remove watch failed:', err);
+    } finally {
+      setRemovingWatch(null);
     }
   };
 
@@ -458,6 +496,95 @@ export default function SavedPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ─── Watchlist Section ─── */}
+      {isPro && (
+        <div className="mt-10">
+          <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            Watchlist
+            {watchlist.length > 0 && (
+              <span className="text-xs font-normal text-gray-400">({watchlist.length}/25)</span>
+            )}
+          </h2>
+
+          {watchlist.length === 0 ? (
+            <div className="text-center py-10 bg-gray-50 rounded-2xl">
+              <svg className="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <p className="text-gray-600 font-medium mb-1">No items on your watchlist</p>
+              <p className="text-sm text-gray-400 mb-4">
+                Search for an item and click &ldquo;Watch&rdquo; to track price changes and STR shifts.
+              </p>
+              <Link
+                href="/search"
+                className="inline-block text-sm font-semibold text-blue-600 hover:text-blue-700"
+              >
+                Start searching &rarr;
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {watchlist.map((item) => {
+                const daysAgo = Math.floor((Date.now() - new Date(item.created_at).getTime()) / (1000 * 60 * 60 * 24));
+                const alertLabel = item.alert_type === 'price_drop' ? 'Price drop' :
+                                   item.alert_type === 'str_change' ? 'STR change' : 'All changes';
+
+                return (
+                  <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <Link
+                          href={`/search?q=${encodeURIComponent(item.query)}`}
+                          className="text-sm font-semibold text-gray-900 hover:text-blue-600 transition truncate block"
+                        >
+                          {item.query}
+                        </Link>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                            {alertLabel}
+                          </span>
+                          {item.target_price && (
+                            <span className="text-xs text-gray-500">
+                              Target: ${item.target_price.toFixed(2)}
+                            </span>
+                          )}
+                          {item.last_str !== null && (
+                            <span className="text-xs text-gray-400">
+                              Last STR: {item.last_str}%
+                            </span>
+                          )}
+                          {item.last_avg_price !== null && (
+                            <span className="text-xs text-gray-400">
+                              Avg: ${item.last_avg_price.toFixed(2)}
+                            </span>
+                          )}
+                          <span className="text-xs text-gray-400">
+                            Added {daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo}d ago`}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveWatch(item.id)}
+                        disabled={removingWatch === item.id}
+                        className="text-gray-400 hover:text-red-500 p-1 ml-2 shrink-0"
+                        title="Remove from watchlist"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

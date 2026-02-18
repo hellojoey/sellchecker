@@ -15,18 +15,9 @@ export async function GET() {
       .limit(10);
 
     if (error || !data || data.length === 0) {
-      // Fallback: return curated default trending items
+      // No real trending data yet — return empty (don't show fake data)
       return NextResponse.json({
-        trending: [
-          { query: 'Lululemon Define Jacket', searches: 0 },
-          { query: 'Nike Dunk Low', searches: 0 },
-          { query: 'Coach Tabby Bag', searches: 0 },
-          { query: 'Doc Martens 1460', searches: 0 },
-          { query: 'Carhartt WIP Jacket', searches: 0 },
-          { query: 'True Religion Jeans', searches: 0 },
-          { query: 'Stanley Tumbler', searches: 0 },
-          { query: 'Birkenstock Boston', searches: 0 },
-        ],
+        trending: [],
         source: 'default',
       });
     }

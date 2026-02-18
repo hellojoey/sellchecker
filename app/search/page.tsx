@@ -10,10 +10,88 @@ import ProFeatureCatalog from '@/components/ProFeatureCatalog';
 import CompCheckTeaser from '@/components/CompCheckTeaser';
 import TrendingSearches from '@/components/TrendingSearches';
 import SaveSearchButton from '@/components/SaveSearchButton';
+import WatchButton from '@/components/WatchButton';
 import OnboardingModal from '@/components/OnboardingModal';
 import { createClient } from '@/lib/supabase/client';
 import { calculateSellThrough, getVerdict, median, type SellThroughResult } from '@/lib/sellthrough';
 import type { ConditionValue } from '@/components/ConditionFilter';
+
+// Mini recent searches component for search page empty state
+function RecentSearchesOnSearch() {
+  const [searches, setSearches] = useState<any[]>([]);
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchRecent = async () => {
+      try {
+        const res = await fetch('/api/search-history?limit=5');
+        if (res.ok) {
+          const data = await res.json();
+          setSearches(data.searches || []);
+        }
+      } catch {
+        // Silently fail
+      }
+    };
+    fetchRecent();
+  }, []);
+
+  if (searches.length === 0) return null;
+
+  const getVerdictColor = (verdict: string) => {
+    switch (verdict) {
+      case 'S_TIER': return 'bg-purple-100 text-purple-700';
+      case 'STRONG_BUY': return 'bg-green-100 text-green-800';
+      case 'BUY': return 'bg-green-100 text-green-700';
+      case 'MAYBE': return 'bg-yellow-100 text-yellow-700';
+      default: return 'bg-red-100 text-red-700';
+    }
+  };
+
+  const getVerdictLabel = (verdict: string) => {
+    switch (verdict) {
+      case 'S_TIER': return 'S-TIER';
+      case 'STRONG_BUY': return 'STRONG BUY';
+      default: return verdict;
+    }
+  };
+
+  const getRelativeDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    return `${diffDays}d ago`;
+  };
+
+  return (
+    <div className="mb-6">
+      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider text-center mb-3">
+        🕐 Your Recent Searches
+      </p>
+      <div className="space-y-1.5 max-w-md mx-auto">
+        {searches.map((search: any, i: number) => (
+          <button
+            key={i}
+            onClick={() => router.push(`/search?q=${encodeURIComponent(search.query)}`)}
+            className="flex items-center w-full gap-2 px-3 py-2 rounded-lg hover:bg-green-50 transition group text-left"
+          >
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${getVerdictColor(search.verdict)}`}>
+              {getVerdictLabel(search.verdict)}
+            </span>
+            <span className="text-sm text-gray-700 truncate flex-1 group-hover:text-green-800">{search.query}</span>
+            {search.sell_through_rate != null && (
+              <span className="text-xs text-gray-400 shrink-0">{search.sell_through_rate}%</span>
+            )}
+            <span className="text-xs text-gray-300 shrink-0">{getRelativeDate(search.searched_at)}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -304,8 +382,9 @@ function SearchContent() {
             </div>
           )}
 
-          {/* Action bar — Save Search button */}
-          <div className="flex items-center justify-end mt-3 mb-2">
+          {/* Action bar — Save + Watch buttons */}
+          <div className="flex items-center justify-end gap-2 mt-3 mb-2">
+            <WatchButton result={displayResult} isPro={isPro} isLoggedIn={isLoggedIn} />
             <SaveSearchButton result={displayResult} isPro={isPro} isLoggedIn={isLoggedIn} />
           </div>
 
@@ -344,12 +423,19 @@ function SearchContent() {
         </div>
       )}
 
-      {/* Empty state — show trending */}
+      {/* Empty state — show recent searches + trending */}
       {!query && !loading && !result && (
-        <div className="text-center py-12 text-gray-400">
-          <div className="text-5xl mb-4">🔍</div>
-          <p className="text-lg mb-1">Search for any item to see its sell-through rate</p>
-          <p className="text-sm mb-8">Try &ldquo;Lululemon Define Jacket&rdquo; or &ldquo;Nike Dunk Low&rdquo;</p>
+        <div className="py-12">
+          <div className="text-center text-gray-400 mb-8">
+            <div className="text-5xl mb-4">🔍</div>
+            <p className="text-lg mb-1">Search for any item to see its sell-through rate</p>
+            <p className="text-sm">Try &ldquo;Lululemon Define Jacket&rdquo; or &ldquo;Nike Dunk Low&rdquo;</p>
+          </div>
+
+          {/* Your Recent Searches (personal, logged-in only) */}
+          {isLoggedIn && <RecentSearchesOnSearch />}
+
+          {/* Trending on SellChecker (platform-wide, only if live data) */}
           <TrendingSearches />
         </div>
       )}

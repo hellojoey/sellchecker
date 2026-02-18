@@ -1,11 +1,14 @@
 // eBay Sold Listings Scraper — Fetches real sold data from eBay's public search pages
 import * as cheerio from 'cheerio';
 
+export type ParseStrategy = 'heading_bold' | 'heading_span' | 'heading_text' | 'alt_class' | 'dom_count' | 'zero_detected' | 'none';
+
 export interface ScrapedSoldData {
   soldCount: number;
   soldPrices: number[];
   soldDates: string[];
   success: boolean;
+  parseStrategy: ParseStrategy;
 }
 
 const USER_AGENTS = [
@@ -25,7 +28,7 @@ function getRandomUserAgent(): string {
  */
 export async function scrapeEbaySoldData(query: string, condition?: string): Promise<ScrapedSoldData> {
   const startTime = Date.now();
-  const empty: ScrapedSoldData = { soldCount: 0, soldPrices: [], soldDates: [], success: false };
+  const empty: ScrapedSoldData = { soldCount: 0, soldPrices: [], soldDates: [], success: false, parseStrategy: 'none' };
 
   try {
     const encodedQuery = encodeURIComponent(query);
@@ -66,7 +69,8 @@ export async function scrapeEbaySoldData(query: string, condition?: string): Pro
     const $ = cheerio.load(html);
 
     // --- Extract total sold count ---
-    const soldCount = extractSoldCount($);
+    const soldCountResult = extractSoldCount($);
+    const soldCount = soldCountResult.count;
 
     // --- Extract individual sold prices and dates ---
     const soldPrices: number[] = [];
@@ -120,6 +124,7 @@ export async function scrapeEbaySoldData(query: string, condition?: string): Pro
       soldPrices,
       soldDates,
       success: soldCount > 0,
+      parseStrategy: soldCountResult.strategy,
     };
   } catch (error: any) {
     const duration = Date.now() - startTime;
@@ -128,23 +133,55 @@ export async function scrapeEbaySoldData(query: string, condition?: string): Pro
   }
 }
 
+interface SoldCountResult {
+  count: number;
+  strategy: ParseStrategy;
+}
+
+/**
+ * Detect if eBay's page indicates zero results.
+ * eBay shows "0 results for..." or "No exact matches found" on empty searches.
+ */
+function isZeroResultsPage($: cheerio.CheerioAPI): boolean {
+  // Check the heading for "0 results"
+  const headingText = $('h1.srp-controls__count-heading').first().text().trim();
+  if (/^0\s+results?\b/i.test(headingText)) return true;
+
+  // Check the bold count for explicit "0"
+  const boldCount = $('h1.srp-controls__count-heading .BOLD').first().text().trim();
+  if (boldCount && parseInt(boldCount.replace(/[,.\s]/g, ''), 10) === 0) return true;
+
+  // Check for "No exact matches found" messaging
+  const bodyText = $('body').text();
+  if (bodyText.includes('No exact matches found')) return true;
+  if (bodyText.includes('0 results for')) return true;
+
+  return false;
+}
+
 /**
  * Extract the total sold count from the search results page.
  * Uses multiple fallback selectors in case eBay changes class names.
+ * Returns both the count and the strategy used so callers can assess confidence.
  */
-function extractSoldCount($: cheerio.CheerioAPI): number {
+function extractSoldCount($: cheerio.CheerioAPI): SoldCountResult {
+  // First: detect zero-results pages before any counting
+  if (isZeroResultsPage($)) {
+    return { count: 0, strategy: 'zero_detected' };
+  }
+
   // Strategy 1: Bold count in heading (most common)
   const boldCount = $('h1.srp-controls__count-heading .BOLD').first().text();
   if (boldCount) {
     const parsed = parseInt(boldCount.replace(/[,.\s]/g, ''), 10);
-    if (!isNaN(parsed) && parsed > 0) return parsed;
+    if (!isNaN(parsed) && parsed > 0) return { count: parsed, strategy: 'heading_bold' };
   }
 
   // Strategy 2: First span in the heading
   const headingSpan = $('h1.srp-controls__count-heading span').first().text();
   if (headingSpan) {
     const parsed = parseInt(headingSpan.replace(/[,.\s]/g, ''), 10);
-    if (!isNaN(parsed) && parsed > 0) return parsed;
+    if (!isNaN(parsed) && parsed > 0) return { count: parsed, strategy: 'heading_span' };
   }
 
   // Strategy 3: Parse number from full heading text
@@ -153,7 +190,7 @@ function extractSoldCount($: cheerio.CheerioAPI): number {
     const match = headingText.match(/([\d,]+)\s*(?:\+\s*)?results?/i);
     if (match) {
       const parsed = parseInt(match[1].replace(/,/g, ''), 10);
-      if (!isNaN(parsed) && parsed > 0) return parsed;
+      if (!isNaN(parsed) && parsed > 0) return { count: parsed, strategy: 'heading_text' };
     }
   }
 
@@ -163,19 +200,26 @@ function extractSoldCount($: cheerio.CheerioAPI): number {
     const match = altCount.match(/([\d,]+)/);
     if (match) {
       const parsed = parseInt(match[1].replace(/,/g, ''), 10);
-      if (!isNaN(parsed) && parsed > 0) return parsed;
+      if (!isNaN(parsed) && parsed > 0) return { count: parsed, strategy: 'alt_class' };
     }
   }
 
-  // Strategy 5: Count card elements on the page as a last resort
-  const cardCount = $('.s-card').length;
-  if (cardCount > 0) return cardCount;
+  // Strategy 5: Count card elements — ONLY items with a price (not ads/suggestions)
+  // Cap at 240 (the _ipg page limit) as a sanity check
+  const realCards = $('.s-card').filter((_, el) => {
+    return $(el).find('.s-card__price').length > 0;
+  });
+  const cardCount = Math.min(realCards.length, 240);
+  if (cardCount > 0) return { count: cardCount, strategy: 'dom_count' };
 
-  // Strategy 6: Older li.s-item layout
-  const itemCount = $('li.s-item').length;
-  if (itemCount > 1) return Math.max(itemCount - 1, 0);
+  // Strategy 6: Older li.s-item layout (filter to items with prices)
+  const realItems = $('li.s-item').filter((_, el) => {
+    return $(el).find('.s-item__price').length > 0;
+  });
+  const itemCount = realItems.length;
+  if (itemCount > 1) return { count: Math.min(Math.max(itemCount - 1, 0), 240), strategy: 'dom_count' };
 
-  return 0;
+  return { count: 0, strategy: 'none' };
 }
 
 /**

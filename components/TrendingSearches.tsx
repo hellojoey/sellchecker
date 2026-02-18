@@ -10,6 +10,7 @@ interface TrendingItem {
 
 export default function TrendingSearches() {
   const [trending, setTrending] = useState<TrendingItem[]>([]);
+  const [source, setSource] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -21,6 +22,7 @@ export default function TrendingSearches() {
         if (data.trending) {
           setTrending(data.trending.slice(0, 8));
         }
+        setSource(data.source || '');
       } catch {
         // Silently fail
       } finally {
@@ -32,7 +34,7 @@ export default function TrendingSearches() {
 
   if (loading) {
     return (
-      <div className="flex flex-wrap gap-2 justify-center">
+      <div className="flex flex-wrap gap-2 justify-center mt-6">
         {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="h-8 w-28 bg-gray-100 rounded-full animate-pulse" />
         ))}
@@ -40,12 +42,13 @@ export default function TrendingSearches() {
     );
   }
 
-  if (trending.length === 0) return null;
+  // Only show if we have real live data — hide if using defaults or empty
+  if (trending.length === 0 || source !== 'live') return null;
 
   return (
-    <div>
+    <div className="mt-6">
       <p className="text-xs font-medium text-gray-400 uppercase tracking-wider text-center mb-3">
-        🔥 Trending searches
+        🔥 Trending on SellChecker
       </p>
       <div className="flex flex-wrap gap-2 justify-center">
         {trending.map((item, idx) => (

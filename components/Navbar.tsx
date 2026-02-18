@@ -44,15 +44,6 @@ export default function Navbar() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    setUser(null);
-    setPlan('free');
-    setMobileOpen(false);
-    window.location.href = '/';
-  };
-
   const handleManageBilling = async () => {
     setMobileOpen(false);
     try {
@@ -67,6 +58,8 @@ export default function Navbar() {
   };
 
   const closeMobile = () => setMobileOpen(false);
+
+  const isPro = plan === 'pro';
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
@@ -86,33 +79,55 @@ export default function Navbar() {
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/pricing" className="text-sm text-gray-600 hover:text-gray-900 transition">
-              Pricing
-            </Link>
+            {/* Pricing + How It Works — only for logged-out users */}
+            {!user && !loading && (
+              <>
+                <Link href="/pricing" className="text-sm text-gray-600 hover:text-gray-900 transition">
+                  Pricing
+                </Link>
+                <Link href="/how-it-works" className="text-sm text-gray-600 hover:text-gray-900 transition">
+                  How It Works
+                </Link>
+              </>
+            )}
 
             {loading ? (
               <div className="w-16 h-8 bg-gray-100 rounded-lg animate-pulse" />
             ) : user ? (
               <>
-                <Link href="/saved" className="text-sm text-gray-600 hover:text-gray-900 transition flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                  </svg>
-                  Saved
-                </Link>
+                {/* Saved — functional for Pro, greyed out with PRO badge for free */}
+                {isPro ? (
+                  <Link href="/saved" className="text-sm text-gray-600 hover:text-gray-900 transition flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                    Saved
+                  </Link>
+                ) : (
+                  <span className="text-sm text-gray-400 flex items-center gap-1 cursor-not-allowed select-none">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                    Saved
+                    <span className="text-[9px] font-bold text-green-700 bg-green-100 px-1 py-0.5 rounded">PRO</span>
+                  </span>
+                )}
+
+                {/* Profile (renamed from Settings) */}
                 <Link href="/profile" className="text-sm text-gray-600 hover:text-gray-900 transition flex items-center gap-1">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  Settings
+                  Profile
                 </Link>
-                {plan === 'pro' && (
+
+                {isPro && (
                   <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-full">
                     PRO
                   </span>
                 )}
-                {plan === 'pro' ? (
+
+                {isPro ? (
                   <button
                     onClick={handleManageBilling}
                     className="text-sm text-gray-600 hover:text-gray-900 transition"
@@ -122,21 +137,18 @@ export default function Navbar() {
                 ) : (
                   <Link
                     href="/pricing"
-                    className="text-sm text-green-600 hover:text-green-700 font-medium transition"
+                    className="text-sm bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium"
                   >
                     Upgrade
                   </Link>
                 )}
-                <button
-                  onClick={handleSignOut}
-                  className="text-sm text-gray-600 hover:text-gray-900 transition"
-                >
-                  Log out
-                </button>
               </>
             ) : (
               <>
-                <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 transition">
+                <Link
+                  href="/login"
+                  className="text-sm border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition font-medium"
+                >
                   Log in
                 </Link>
                 <Link
@@ -170,49 +182,75 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden bg-white border-t border-gray-100 animate-slide-down">
           <div className="px-4 py-2">
-            {/* Navigation links */}
-            <Link
-              href="/pricing"
-              onClick={closeMobile}
-              className="flex items-center gap-3 min-h-[44px] py-3 px-2 text-gray-700 hover:text-gray-900 active:bg-gray-50 rounded-lg transition"
-            >
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Pricing
-            </Link>
-
-            {user ? (
+            {/* Logged-out only links */}
+            {!user && !loading && (
               <>
                 <Link
-                  href="/saved"
+                  href="/pricing"
                   onClick={closeMobile}
                   className="flex items-center gap-3 min-h-[44px] py-3 px-2 text-gray-700 hover:text-gray-900 active:bg-gray-50 rounded-lg transition"
                 >
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Saved Searches
-                  {plan === 'pro' && (
-                    <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded ml-auto">PRO</span>
-                  )}
+                  Pricing
                 </Link>
+                <Link
+                  href="/how-it-works"
+                  onClick={closeMobile}
+                  className="flex items-center gap-3 min-h-[44px] py-3 px-2 text-gray-700 hover:text-gray-900 active:bg-gray-50 rounded-lg transition"
+                >
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  How It Works
+                </Link>
+              </>
+            )}
+
+            {user ? (
+              <>
+                {/* Saved — functional for Pro, disabled for free */}
+                {isPro ? (
+                  <Link
+                    href="/saved"
+                    onClick={closeMobile}
+                    className="flex items-center gap-3 min-h-[44px] py-3 px-2 text-gray-700 hover:text-gray-900 active:bg-gray-50 rounded-lg transition"
+                  >
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                    Saved Searches
+                    <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded ml-auto">PRO</span>
+                  </Link>
+                ) : (
+                  <span
+                    className="flex items-center gap-3 min-h-[44px] py-3 px-2 text-gray-400 rounded-lg cursor-not-allowed select-none"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                    Saved Searches
+                    <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded ml-auto">PRO</span>
+                  </span>
+                )}
+
+                {/* Profile (renamed from Settings) */}
                 <Link
                   href="/profile"
                   onClick={closeMobile}
                   className="flex items-center gap-3 min-h-[44px] py-3 px-2 text-gray-700 hover:text-gray-900 active:bg-gray-50 rounded-lg transition"
                 >
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  Settings
+                  Profile
                 </Link>
 
                 {/* Divider */}
                 <div className="border-t border-gray-100 my-1" />
 
-                {plan === 'pro' ? (
+                {isPro ? (
                   <button
                     onClick={handleManageBilling}
                     className="flex items-center gap-3 w-full min-h-[44px] py-3 px-2 text-gray-700 hover:text-gray-900 active:bg-gray-50 rounded-lg transition"
@@ -234,16 +272,6 @@ export default function Navbar() {
                     Upgrade to Pro
                   </Link>
                 )}
-
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center gap-3 w-full min-h-[44px] py-3 px-2 text-gray-500 hover:text-gray-700 active:bg-gray-50 rounded-lg transition"
-                >
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Log out
-                </button>
               </>
             ) : (
               <>

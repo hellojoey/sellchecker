@@ -1,7 +1,7 @@
 'use client';
 
 import type { SellThroughResult } from '@/lib/sellthrough';
-import { estimateDaysToSellRange } from '@/lib/sellthrough';
+import { estimateDaysToSellRange, getCategoryInsight } from '@/lib/sellthrough';
 import SellThroughGauge from './SellThroughGauge';
 import VerdictBadge from './VerdictBadge';
 import SmartInsights from './SmartInsights';
@@ -85,6 +85,35 @@ export default function SearchResults({
 
         {/* Smart Insights — inline below verdict */}
         <SmartInsights result={result} isPro={isPro} />
+
+        {/* Category benchmark insight */}
+        {(() => {
+          const insight = getCategoryInsight(result.sellThroughRate, result.category, result.categoryBenchmark);
+          if (!insight) return null;
+
+          const diff = result.sellThroughRate - (result.categoryBenchmark || 0);
+          const isAbove = diff > 3;
+          const isBelow = diff < -3;
+
+          return (
+            <div className={`flex items-center justify-center gap-1.5 mt-3 px-3 py-1.5 rounded-full text-xs font-medium mx-auto w-fit ${
+              isAbove ? 'bg-green-50 text-green-700' :
+              isBelow ? 'bg-red-50 text-red-600' :
+              'bg-gray-50 text-gray-600'
+            }`}>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isAbove ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                ) : isBelow ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" />
+                )}
+              </svg>
+              {insight}
+            </div>
+          );
+        })()}
 
         {/* Stats Grid */}
         {(() => {

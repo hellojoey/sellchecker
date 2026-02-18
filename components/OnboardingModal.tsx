@@ -3,6 +3,25 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+// Rotating sample searches — mix of specific items and quirky finds
+const SAMPLE_SEARCHES = [
+  { query: 'Nike SB Dunk Jarritos Size 10 Mens', display: 'Nike SB Dunk Jarritos' },
+  { query: 'Vintage Grateful Dead Tour Tee', display: 'Vintage Grateful Dead Tour Tee' },
+  { query: 'Pokemon Charizard Holo 1st Edition', display: 'Pokemon Charizard Holo' },
+  { query: 'Tamagotchi Original 1997', display: 'Tamagotchi Original 1997' },
+  { query: 'KitchenAid Artisan Mixer Red', display: 'KitchenAid Artisan Mixer' },
+  { query: 'Vintage Corningware Blue Cornflower', display: 'Vintage Corningware' },
+  { query: 'Nintendo 64 Console Complete', display: 'Nintendo 64 Console' },
+  { query: 'Supreme Box Logo Hoodie', display: 'Supreme Box Logo Hoodie' },
+  { query: 'Patagonia Better Sweater Large', display: 'Patagonia Better Sweater' },
+  { query: 'Lululemon Define Jacket Size 6', display: 'Lululemon Define Jacket' },
+  { query: 'Birkenstock Boston Clog', display: 'Birkenstock Boston Clog' },
+  { query: 'Vitamix 5200 Blender', display: 'Vitamix 5200 Blender' },
+  { query: 'Vintage Pyrex Mixing Bowl Set', display: 'Vintage Pyrex Mixing Bowls' },
+  { query: 'Air Jordan 4 Retro Bred', display: 'Air Jordan 4 Bred' },
+  { query: 'Pendleton Wool Blanket', display: 'Pendleton Wool Blanket' },
+];
+
 interface OnboardingModalProps {
   onComplete: () => void;
 }
@@ -11,9 +30,14 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
   const [step, setStep] = useState(0);
   const router = useRouter();
 
+  // Pick a random sample search once per mount
+  const [sampleSearch] = useState(() =>
+    SAMPLE_SEARCHES[Math.floor(Math.random() * SAMPLE_SEARCHES.length)]
+  );
+
   const handleSampleSearch = () => {
     onComplete();
-    router.push('/search?q=lululemon+define+jacket');
+    router.push(`/search?q=${encodeURIComponent(sampleSearch.query)}`);
   };
 
   const handleSkip = () => {
@@ -77,7 +101,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
                 Try your first SellCheck
               </h2>
               <p className="text-sm text-gray-600 mb-6">
-                See what a real search looks like with one of our most popular items.
+                See what a real search looks like — we picked one for you.
               </p>
 
               <button
@@ -87,7 +111,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                SellCheck &ldquo;Lululemon Define Jacket&rdquo;
+                SellCheck &ldquo;{sampleSearch.display}&rdquo;
               </button>
 
               <button

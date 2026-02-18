@@ -22,23 +22,25 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-gray-900 mb-3">Product</h4>
             <ul className="space-y-2 text-sm text-gray-500">
-              <li><Link href="/" className="hover:text-gray-900 transition">Search</Link></li>
+              <li><Link href="/search" className="hover:text-gray-900 transition">Search</Link></li>
               <li><Link href="/pricing" className="hover:text-gray-900 transition">Pricing</Link></li>
+              <li><Link href="/how-it-works" className="hover:text-gray-900 transition">How It Works</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className="text-sm font-semibold text-gray-900 mb-3">Support</h4>
             <ul className="space-y-2 text-sm text-gray-500">
-              <li><a href="mailto:hello@sellchecker.app" className="hover:text-gray-900 transition">Contact</a></li>
+              <li><Link href="/contact" className="hover:text-gray-900 transition">Contact</Link></li>
+              <li><Link href="/contact#faq" className="hover:text-gray-900 transition">FAQ</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className="text-sm font-semibold text-gray-900 mb-3">Legal</h4>
             <ul className="space-y-2 text-sm text-gray-500">
-              <li><Link href="#" className="hover:text-gray-900 transition">Privacy</Link></li>
-              <li><Link href="#" className="hover:text-gray-900 transition">Terms</Link></li>
+              <li><Link href="/privacy" className="hover:text-gray-900 transition">Privacy</Link></li>
+              <li><Link href="/terms" className="hover:text-gray-900 transition">Terms</Link></li>
             </ul>
           </div>
         </div>
