@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -10,6 +11,12 @@ export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [plan, setPlan] = useState<string>('free');
   const [loading, setLoading] = useState(true);
+  const [navQuery, setNavQuery] = useState('');
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Show search bar on all pages except homepage and search page
+  const showNavSearch = pathname !== '/' && pathname !== '/search';
 
   useEffect(() => {
     const supabase = createClient();
@@ -44,20 +51,14 @@ export default function Navbar() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleManageBilling = async () => {
-    setMobileOpen(false);
-    try {
-      const res = await fetch('/api/billing/portal', { method: 'POST' });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      console.error('Failed to open billing portal:', error);
-    }
-  };
-
   const closeMobile = () => setMobileOpen(false);
+
+  const handleNavSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!navQuery.trim()) return;
+    router.push(`/search?q=${encodeURIComponent(navQuery.trim())}`);
+    setNavQuery('');
+  };
 
   const isPro = plan === 'pro';
 
@@ -77,8 +78,26 @@ export default function Navbar() {
             </span>
           </Link>
 
+          {/* Desktop: nav search bar */}
+          {showNavSearch && (
+            <form onSubmit={handleNavSearch} className="hidden md:flex items-center flex-1 max-w-md mx-6">
+              <div className="relative w-full">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  value={navQuery}
+                  onChange={(e) => setNavQuery(e.target.value)}
+                  placeholder="Search eBay sell-through rates..."
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:border-green-500 focus:bg-white focus:outline-none transition"
+                />
+              </div>
+            </form>
+          )}
+
           {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-5">
             {/* Pricing + How It Works — only for logged-out users */}
             {!user && !loading && (
               <>
@@ -113,7 +132,7 @@ export default function Navbar() {
                   </span>
                 )}
 
-                {/* Profile (renamed from Settings) */}
+                {/* Profile */}
                 <Link href="/profile" className="text-sm text-gray-600 hover:text-gray-900 transition flex items-center gap-1">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -121,19 +140,10 @@ export default function Navbar() {
                   Profile
                 </Link>
 
-                {isPro && (
+                {isPro ? (
                   <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-full">
                     PRO
                   </span>
-                )}
-
-                {isPro ? (
-                  <button
-                    onClick={handleManageBilling}
-                    className="text-sm text-gray-600 hover:text-gray-900 transition"
-                  >
-                    Billing
-                  </button>
                 ) : (
                   <Link
                     href="/pricing"
@@ -182,6 +192,24 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden bg-white border-t border-gray-100 animate-slide-down">
           <div className="px-4 py-2">
+            {/* Mobile search bar */}
+            {showNavSearch && (
+              <form onSubmit={(e) => { handleNavSearch(e); closeMobile(); }} className="py-2">
+                <div className="relative">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={navQuery}
+                    onChange={(e) => setNavQuery(e.target.value)}
+                    placeholder="Search sell-through rates..."
+                    className="w-full pl-9 pr-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:border-green-500 focus:bg-white focus:outline-none transition"
+                  />
+                </div>
+              </form>
+            )}
+
             {/* Logged-out only links */}
             {!user && !loading && (
               <>
@@ -247,30 +275,21 @@ export default function Navbar() {
                   Profile
                 </Link>
 
-                {/* Divider */}
-                <div className="border-t border-gray-100 my-1" />
-
-                {isPro ? (
-                  <button
-                    onClick={handleManageBilling}
-                    className="flex items-center gap-3 w-full min-h-[44px] py-3 px-2 text-gray-700 hover:text-gray-900 active:bg-gray-50 rounded-lg transition"
-                  >
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                    </svg>
-                    Manage Billing
-                  </button>
-                ) : (
-                  <Link
-                    href="/pricing"
-                    onClick={closeMobile}
-                    className="flex items-center gap-3 min-h-[44px] py-3 px-2 text-green-600 font-medium active:bg-green-50 rounded-lg transition"
-                  >
-                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                    Upgrade to Pro
-                  </Link>
+                {!isPro && (
+                  <>
+                    {/* Divider */}
+                    <div className="border-t border-gray-100 my-1" />
+                    <Link
+                      href="/pricing"
+                      onClick={closeMobile}
+                      className="flex items-center gap-3 min-h-[44px] py-3 px-2 text-green-600 font-medium active:bg-green-50 rounded-lg transition"
+                    >
+                      <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                      Upgrade to Pro
+                    </Link>
+                  </>
                 )}
               </>
             ) : (
