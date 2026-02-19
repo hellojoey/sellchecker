@@ -171,7 +171,7 @@ export default function ProfilePage() {
       const res = await fetch('/api/saved');
       if (!res.ok) return;
       const data = await res.json();
-      const searches = data.searches || [];
+      const searches = data.savedSearches || [];
       if (searches.length === 0) return;
 
       const headers = ['Query', 'Verdict', 'Sell-Through Rate', 'Avg Price', 'Median Price', 'Active', 'Sold (90d)', 'Saved At'];
@@ -387,6 +387,7 @@ export default function ProfilePage() {
                     {savedSearches.map((s) => (
                       <li key={s.id} className="text-xs text-gray-600 truncate">
                         <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${
+                          s.verdict === 'STRONG_BUY' || s.verdict === 'S_TIER' ? 'bg-emerald-500' :
                           s.verdict === 'BUY' ? 'bg-green-500' :
                           s.verdict === 'MAYBE' ? 'bg-yellow-500' : 'bg-red-500'
                         }`} />

@@ -1,13 +1,15 @@
 // /api/search-history — Paginated search history for logged-in users
-// GET /api/search-history?page=1
+// GET /api/search-history?page=1&limit=20
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase, createServiceClient } from '@/lib/supabase/server';
 
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 20;
 
 export async function GET(request: NextRequest) {
   const page = parseInt(request.nextUrl.searchParams.get('page') || '1', 10);
-  const offset = (Math.max(1, page) - 1) * PAGE_SIZE;
+  const limitParam = request.nextUrl.searchParams.get('limit');
+  const pageSize = limitParam ? Math.min(Math.max(1, parseInt(limitParam, 10) || DEFAULT_PAGE_SIZE), 100) : DEFAULT_PAGE_SIZE;
+  const offset = (Math.max(1, page) - 1) * pageSize;
 
   try {
     // Require authentication
@@ -35,7 +37,7 @@ export async function GET(request: NextRequest) {
       .select('id, query, sell_through_rate, verdict, avg_sold_price, median_sold_price, sold_count_90d, active_count, searched_at', { count: 'exact' })
       .eq('user_id', user.id)
       .order('searched_at', { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1);
+      .range(offset, offset + pageSize - 1);
 
     if (error) {
       console.error('Search history error:', error);

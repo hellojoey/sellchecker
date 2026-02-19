@@ -86,7 +86,7 @@ async function searchActive(query: string, limit = 50, condition?: string): Prom
 // Extract prices from items
 function extractPrices(items: EbayItemSummary[]): number[] {
   return items
-    .map(item => parseFloat(item.price.value))
+    .map(item => parseFloat(item.price?.value))
     .filter(price => !isNaN(price) && price > 0);
 }
 

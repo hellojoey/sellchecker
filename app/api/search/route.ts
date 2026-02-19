@@ -59,6 +59,17 @@ export async function GET(request: NextRequest) {
         verdict: cached.verdict,
       }, false).catch(() => {});
 
+      // Get remaining searches for free users (even on cache hits)
+      let cachedRemainingSearches: number | null = null;
+      const { data: cachedProfile } = await supabase
+        .from('profiles')
+        .select('plan, searches_today')
+        .eq('id', user.id)
+        .single();
+      if (cachedProfile && cachedProfile.plan !== 'pro') {
+        cachedRemainingSearches = Math.max(0, 5 - (cachedProfile.searches_today || 0));
+      }
+
       return NextResponse.json({
         result: {
           query: cached.query,
@@ -78,6 +89,7 @@ export async function GET(request: NextRequest) {
           dataSource: cached.raw_data?.dataSource || 'estimated',
         },
         cached: true,
+        remainingSearches: cachedRemainingSearches,
       });
     }
 
